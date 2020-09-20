@@ -34,6 +34,16 @@ class PoseController:
         may also be useful, look up its documentation
         """
         ########## Code starts here ##########
+        k1, k2, k3 = self.k1, self.k2, self.k3
+
+        # These are given by equation (8) in lecture 4 notes.
+        rho = np.sqrt(x*x + y*y)
+        alpha = np.arctan2(y,x) - th + np.pi
+        delta = alpha + th
+
+        # These are given by equation (4) in the problem set.
+        V = k1 * rho * np.cos(alpha)
+        om = k2 * alpha + k1 * np.sinc(alpha) * np.cos(alpha) * (alpha + k3 * delta)
         
         ########## Code ends here ##########
 

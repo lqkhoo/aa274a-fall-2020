@@ -105,7 +105,6 @@ def compute_traj(coeffs, tf, N):
     traj[2] = np.arctan2(traj[4], traj[3])
 
     traj = traj.T # Question expects traj with shape (N,7)
-
     # assert(np.shape(traj) == (N,7))
 
     ########## Code ends here ##########
@@ -170,7 +169,7 @@ def compute_arc_length(V, t):
     """
     s = None
     ########## Code starts here ##########
-
+    s = cumtrapz(V, t, initial=0)
     ########## Code ends here ##########
     return s
 
@@ -192,6 +191,13 @@ def rescale_V(V, om, V_max, om_max):
     """
     ########## Code starts here ##########
 
+    # V_tilde < 0.5 = V_max
+
+    # | om / V * V_tilde | < 1.0 = om_max
+    # V_tilde < | om_max / om * V |, trivial because V, V_tilde, om_max non-negative.
+
+    V_tilde = np.minimum(V, V_max)
+    V_tilde = np.minimum(V_tilde, np.abs(om_max / om * V))
     ########## Code ends here ##########
     return V_tilde
 
@@ -208,7 +214,7 @@ def compute_tau(V_tilde, s):
     Hint: Use the function cumtrapz. This should take one line.
     """
     ########## Code starts here ##########
-
+    tau = cumtrapz(1/V_tilde, s, initial=0)
     ########## Code ends here ##########
     return tau
 
@@ -225,7 +231,7 @@ def rescale_om(V, om, V_tilde):
     Hint: This should take one line.
     """
     ########## Code starts here ##########
-
+    om_tilde = om / V * V_tilde
     ########## Code ends here ##########
     return om_tilde
 

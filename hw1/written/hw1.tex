@@ -36,7 +36,7 @@
 \setlength{\parindent}{0in}
 
 \title{AA 274A: Principles of Robot Autonomy I \\ Problem Set X}
-\author{Name: Li Quan Khoo     \\ SUID:lqkhoo}
+\author{Name: Li Quan Khoo (SCPD)     \\ SUID: lqkhoo}
 \date{}
 
 \begin{document}
@@ -44,7 +44,7 @@
 \maketitle
 \pagestyle{fancy} 
 
-\section*{Problem 1}
+\section*{Problem 1: Trajectory Generation via Differential Flatness}
 \begin{enumerate}[label=(\roman*)]
 \item % (i)
 
@@ -95,16 +95,59 @@ Since $\det(J)=V$, $V>0\; \forall t$ is a sufficient and necessary condition for
 (code)
 
 \item % (v)
-TODO
+\begin{tabular}[t]{c}
+	\hline \\
+	\includegraphics[width=1.0\textwidth]{img/differential_flatness.png} \\
+	Trajectory of unicycle model in absence of noise. Initial and final conditions as given. \\
+	\hline
+\end{tabular}
 
 \item % (vi)
-TODO
+\begin{tabular}[t]{c}
+	\hline \\
+	\includegraphics[width=1.0\textwidth]{img/sim_traj_openloop.png} \\
+	Trajectory of unicycle model where control vector $u_\text{noisy}=u + \epsilon$ where $\epsilon$ is simulated isotropic Gaussian noise. \\
+	\hline
+\end{tabular}
 
 
 \end{enumerate}
 
-\section*{Problem 2}
+\section*{Problem 2: Pose Stabilization}
 
-\section*{Problem 3}
+	\begin{enumerate}[label=(\roman*)]
+		
+	\item % (i)
+	(code)
+	
+	\item % (ii)
+	(code)
+	
+	\item % (iii)
+	\begin{tabular}[t]{c}
+		\hline \\
+		\includegraphics[width=1.0\textwidth]{img/sim_parking_forward.png} \\
+		Forward parking \\
+		\hline
+	\end{tabular}
+	\begin{tabular}[t]{c}
+		\hline \\
+		\includegraphics[width=1.0\textwidth]{img/sim_parking_reverse.png} \\
+		Reverse parking \\
+		\hline
+	\end{tabular}
+	\begin{tabular}[t]{c}
+		\hline \\
+		\includegraphics[width=1.0\textwidth]{img/sim_parking_parallel.png} \\
+		Parallel parking \\
+		\hline
+	\end{tabular}
+		
+	\end{enumerate}
+
+
+\section*{Problem 3: Trajectory Tracking}
+
+\section*{Extra Problem: Optimal Control and Trajectory Optimization}
 
 \end{document}
