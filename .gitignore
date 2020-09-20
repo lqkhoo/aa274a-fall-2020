@@ -1,0 +1,6 @@
+*.vscode
+*.pyc
+*.aux
+*.log
+*.out
+*.synctex.gz
