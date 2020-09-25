@@ -3,6 +3,7 @@
 \usepackage{amsmath}
 \usepackage{amsthm}
 \usepackage{amssymb}
+\usepackage{bm}
 \usepackage{bbm}
 \usepackage{fancyhdr}
 % \usepackage{listings}
@@ -36,7 +37,7 @@
 \setlength{\parindent}{0in}
 
 \title{AA 274A: Principles of Robot Autonomy I \\ Problem Set X}
-\author{Name: Li Quan Khoo (SCPD)     \\ SUID: lqkhoo}
+\author{Name: Li Quan Khoo     \\ SUID: lqkhoo (06154100)}
 \date{}
 
 \begin{document}
@@ -86,7 +87,7 @@ where $\dot{x}(t)=V\cos\theta$ and $\dot{y}(t)=V\sin\theta$ as given by the robo
 
 
 \item % (ii)
-Since $\det(J)=V$, $V>0\; \forall t$ is a sufficient and necessary condition for the matrix $J$ to be invertible.
+Since $\det(\bm{J})=V$, $V>0\; \forall t$ is a sufficient and necessary condition for the matrix $\bm{J}$ to be invertible.
 
 \item % (iii)
 (code)
@@ -145,9 +146,164 @@ Since $\det(J)=V$, $V>0\; \forall t$ is a sufficient and necessary condition for
 		
 	\end{enumerate}
 
+\pagebreak
 
 \section*{Problem 3: Trajectory Tracking}
 
+	\begin{enumerate}[label=(\roman*)]
+	
+	\item % (i)
+	Starting from our extended unicycle model, the given kinematic equations are:
+	
+	\begin{equation}
+	\begin{aligned}
+	\dot{x}(t) &= V\cos(\theta) \\
+	\dot{y}(t) &= V\sin(\theta) \\
+	\dot{V}(t) &= a(t) \\
+	\dot{\theta}(t) &= \omega(t)
+	\end{aligned}
+	\end{equation}
+	
+	\begin{equation}
+	\underbrace{
+		\begin{bmatrix}
+		\ddot{x}(t) \\
+		\ddot{y}(t)
+		\end{bmatrix}
+	}_{\ddot{\bm{z}}=\bm{z}^{(q+1)}}
+	=
+	\underbrace{
+		\begin{bmatrix}
+		\cos(\theta) & -V\sin(\theta) \\
+		\sin(\theta) & V\cos(\theta) \\
+		\end{bmatrix}
+	}_{:=\bm{J}}
+	\begin{bmatrix}
+	a \\
+	\omega
+	\end{bmatrix}
+	:=
+	\underbrace{
+		\begin{bmatrix}
+		u_1 \\
+		u_2
+		\end{bmatrix}
+	}_{\bm{w}}
+	\end{equation}
+	
+	Equation (2) is in the form of a linear ODE $\bm{z}^{(q+1)}=\bm{w}$. For the unicycle model, $q$ is known to be 1. We want to design a control law for the virtual input term $\bm{w}$.
+	
+	Below is the exact linearization scheme in lecture 4. Where superscript $(j)$ denotes the jth derivative w.r.t. $t$, subscript $d$ denotes the 'desired' open-loop trajectory that we wish to track, we define $i$th component of the linear tracking error to be:
+	
+	\begin{equation}
+	\begin{aligned}
+	e_i(t) &:=z_i(t) - z_{i,d}(t) \\
+	e_i^{(q+1)}(t) &= z^{(q+1)}_i(t) - z^{(q+1)}_{i,d}(t) \\
+	               &= w_i - w_{i,d} \\
+	\bm{e}(t) &= \bm{w}(t) - \bm{w}_d(t)
+	\end{aligned}
+	\end{equation}
+	, which is a second-order ODE for our system.
+	
+	Following lecture 4 notes, we consider a closed-loop control law of the form:
+	
+	\begin{equation}
+	w_i(t) = w_{i,d}(t) - \sum_{j=0}^q k_{i,j}e_i^{(j)}(t)
+	\end{equation}
+	
+	which results in closed-loop dynamics of the form:
+	
+	\begin{equation}
+	\bm{z}^{(q+1)} = \bm{w}_d - \sum_{j=0}^q K_j \bm{e}^{(j)}
+	\end{equation}
+	
+	, where $K_j$ is a diagonal matrix containing elements $k_{i,j}$. Since $\bm{z}_d^{(q+1)}=\bm{w}_d$, we finally get:
+	
+	\begin{equation}
+	\bm{e}^{(q+1)} + \sum_{j=0}^q K_j \bm{e}^{(j)} = 0
+	\end{equation}
+	
+	For our system, (6) becomes:
+	
+	\begin{equation}
+	\begin{aligned}
+	(\ddot{x}-\ddot{x}_d) &+ k_{dx}(\dot{x} - \dot{x}) &+ k_{px}(x_d - x) = 0 \\
+	\underbrace{(\ddot{y}-\ddot{y}_d)}_{\ddot{e}} &+
+	k_{dy}\underbrace{(\dot{y} - \dot{y})}_{\dot{e}} &+
+	k_{py}\underbrace{(y_d - y)}_{e} = 0
+	\end{aligned}
+	\end{equation}
+	
+	This is a 2nd order ODE in $\bm{e}$ in standard form. We know that for dynamic systems governed by such systems, the system is underdamped or critically-damped when the (two) roots of its characteristic equation are real. We get critical damping (fastest tracking in our case) when both the real roots are equal. This tells us what the values of $K$ should be.
+	
+	Rearranging (7), since $\ddot{x}=u_1$ and $\ddot{y}=u_2$ from (2), we get:
+	
+	\begin{equation}
+	\begin{aligned}
+	u_1 &= \ddot{x}_d &+ k_{px}(x_d - x) &+ k_{dx}(\dot{x} - \dot{x}) = 0 \\
+	u_2 &= \ddot{y}_d &+ k_{py}(y_d - y) &+ k_{dy}(\dot{y} - \dot{y}) = 0
+	\end{aligned}
+	\end{equation}
+	
+	Finally, to recover our real controls $\{a, \omega\}$, we invert $J$ in (2) and solve for:
+
+	\begin{equation}
+	\begin{bmatrix}
+	a \\
+	w
+	\end{bmatrix}
+	=
+	J^{-1}
+	\begin{bmatrix}
+	u_1 \\
+	u_2
+	\end{bmatrix}
+	\end{equation}
+	
+	To recover $V$ as the problem requested,
+	
+	\begin{equation}
+	\begin{aligned}
+	V(t) &= \int a(t) dt \\
+	V_t &= V_{t-1} + a_t \Delta t
+	\end{aligned}
+	\end{equation}
+	
+	\item % (ii)
+	(code)
+	
+	\item % (iii)
+	\begin{tabular}[t]{c}
+	\hline \\
+	\includegraphics[width=1.0\textwidth]{img/sim_traj_closedloop.png} \\
+	Trajectory of unicycle under two-part tracking controller. \\
+	\hline
+	\end{tabular}
+	
+	\end{enumerate}
+
+\pagebreak
+
 \section*{Extra Problem: Optimal Control and Trajectory Optimization}
+
+	\begin{enumerate}[label=(\roman*)]
+	
+	\item % (i)
+	TODO
+	
+	\item % (ii)
+	TODO
+	
+	\item % (iii)
+	TODO
+	
+	\item % (iv)
+	TODO
+
+	\item % (v)
+	TODO
+	
+	
+	\end{enumerate}
 
 \end{document}

@@ -102,7 +102,9 @@ def compute_traj(coeffs, tf, N):
     ], dtype=float)
 
     traj = np.matmul(A, psi)
-    traj[2] = np.arctan2(traj[4], traj[3])
+
+    ydot, xdot = traj[4], traj[3]
+    traj[2] = np.arctan2(ydot, xdot)
 
     traj = traj.T # Question expects traj with shape (N,7)
     # assert(np.shape(traj) == (N,7))
@@ -144,9 +146,9 @@ def compute_controls(traj):
     b = np.vstack((xddot, yddot)).T
 
     # To solve: Jx = b
-    tmp = np.linalg.solve(J, b)
-    a = tmp[:,0]
-    om = tmp[:,1]
+    soln = np.linalg.solve(J, b)
+    a = soln[:,0]
+    om = soln[:,1]
 
     # assert(np.shape(a) == (N,))
     # assert(np.shape(om) == (N,))
@@ -191,10 +193,10 @@ def rescale_V(V, om, V_max, om_max):
     """
     ########## Code starts here ##########
 
-    # V_tilde < 0.5 = V_max
+    ## V_tilde < 0.5 = V_max
 
-    # | om / V * V_tilde | < 1.0 = om_max
-    # V_tilde < | om_max / om * V |, trivial because V, V_tilde, om_max non-negative.
+    ## | om / V * V_tilde | < 1.0 = om_max
+    ## V_tilde < | om_max / om * V |, trivial because V, V_tilde, om_max non-negative.
 
     V_tilde = np.minimum(V, V_max)
     V_tilde = np.minimum(V_tilde, np.abs(om_max / om * V))
