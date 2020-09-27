@@ -16,6 +16,38 @@ def ode_fun(tau, z):
         dz: the state derivative vector. Returns a numpy array.
     """
     ########## Code starts here ##########
+    (x, y, theta, p1, p2, p3, r) = z
+
+    ### Terms in z are functions of time only. Not each other.
+    ### H is a function of z
+
+    ### From the Hamiltonian,
+    # dH_dV = 2*V - p_1*V*np.sin(theta) + p_2*V*np.cos(theta)
+    # dH_domega = 2*omega + p_3
+
+    ### From dH_du = 0
+    # dH_dV = 0
+    # dH_domega = 0
+
+    ### Therefore
+    omega = - p_3 / 2.0
+
+    dH_dx = 0 # H is not a function of x
+    dH_dy = 0 # H is not a function of y
+    dH_dtheta = -p1*V*np.sin(theta) + p2*V*np.cos(theta)
+
+    x_dot = V * np.cos(theta)
+    y_dot = V * np.sin(theta)
+    theta_dot = omega
+    p1_dot = -dH_dx
+    p2_dot = -dH_dy
+    p3_dot = -dH_dtheta
+    r_dot = 0
+
+    z_dot = np.array([x_dot, y_dot, theta_dot, p1_dot, p2_dot, p3_dot, r_dot])
+
+    ### multiply by r to make dz derivative wrt new time tau = t/t_f
+    dz = r * z_dot
 
     ########## Code ends here ##########
     return dz
@@ -40,6 +72,28 @@ def bc_fun(za, zb):
     x0 = [0, 0, -np.pi/2.0]
 
     ########## Code starts here ##########
+    LAMBDA = 0.5
+
+    x_0, y_0, theta_0, p1_0, p2_0, p3_0, r_0 = za
+    x_f, y_f, theta_f, p1_f, p2_f, p3_f, r_f = zb
+
+    bca = np.array([
+        x_0 - x0[0],
+        y_0 - x0[1],
+        theta_0 - x0[2]
+    ])
+
+    omega = - p3_f / 2.0
+    V = np.sqrt(x_f*x_f + y_f*y_f)
+
+    bcb = np.array([
+        x_f - xf[0],
+        y_f - xf[1],
+        theta_f - xf[2],
+        LAMBDA + V*V + omega*omega + p1_f*V*np.sin(theta_f) +
+                    p2_f*V*np.sin(theta_f) + p3_f*omega
+    ])
+
 
     ########## Code ends here ##########
     return (bca, bcb)
@@ -80,6 +134,8 @@ def compute_controls(z):
     """
     ########## Code starts here ##########
 
+
+
     ########## Code ends here ##########
 
     return V, om
@@ -95,6 +151,15 @@ def main():
     Hint: The total time is between 15-25
     """
     ########## Code starts here ##########
+
+    num_ODE = 3+1
+    num_parameters = 0
+    num_left_boundary_conditions = 4
+    boundary_points = (0, 1) # domain of integration \tau_0 = 0 and \tau = 1
+    function = ode_fun
+    boundary_conditions = bc_fun
+
+    initial_guess = np.array([0, 0, 0, 0, 0], dtype=np.float)
 
     ########## Code ends here ##########
 

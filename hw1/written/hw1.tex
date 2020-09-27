@@ -234,7 +234,7 @@ Since $\det(\bm{J})=V$, $V>0\; \forall t$ is a sufficient and necessary conditio
 	\end{aligned}
 	\end{equation}
 	
-	This is a 2nd order ODE in $\bm{e}$ in standard form. We know that for dynamic systems governed by such systems, the system is underdamped or critically-damped when the (two) roots of its characteristic equation are real. We get critical damping (fastest tracking in our case) when both the real roots are equal. This tells us what the values of $K$ should be.
+	This is a 2nd order ODE in $\bm{e}$ in standard form. We know that for the system to be stable, the real parts of both roots of its characteristic equation must be $>0$. We also know that the system is critically-damped when the roots are equal. This tells us what the values of $K$ should be.
 	
 	Rearranging (7), since $\ddot{x}=u_1$ and $\ddot{y}=u_2$ from (2), we get:
 	
@@ -248,23 +248,39 @@ Since $\det(\bm{J})=V$, $V>0\; \forall t$ is a sufficient and necessary conditio
 	Finally, to recover our real controls $\{a, \omega\}$, we invert $J$ in (2) and solve for:
 
 	\begin{equation}
+	\begin{aligned}
 	\begin{bmatrix}
 	a \\
 	w
 	\end{bmatrix}
-	=
+	&=
 	J^{-1}
 	\begin{bmatrix}
 	u_1 \\
 	u_2
+	\end{bmatrix} \; , \; V>0 \\
+	\begin{bmatrix}
+	a \\
+	w
 	\end{bmatrix}
+	&=
+	\frac{1}{V}
+	\begin{bmatrix}
+	V\cos(\theta) & V\sin(\theta) \\
+	-\sin(\theta) & \cos(\theta)
+	\end{bmatrix}
+	\begin{bmatrix}
+	u_1 \\
+	u_2
+	\end{bmatrix}
+	\end{aligned}
 	\end{equation}
 	
 	To recover $V$ as the problem requested,
 	
 	\begin{equation}
 	\begin{aligned}
-	V(t) &= \int a(t) dt \\
+	V(T) &= \int_{t_0}^T a(t) \; dt \\
 	V_t &= V_{t-1} + a_t \Delta t
 	\end{aligned}
 	\end{equation}
@@ -289,10 +305,159 @@ Since $\det(\bm{J})=V$, $V>0\; \forall t$ is a sufficient and necessary conditio
 	\begin{enumerate}[label=(\roman*)]
 	
 	\item % (i)
-	TODO
+	To minimize:
+	\begin{equation}
+	J = \int_0^{t_f} \underbrace{[\lambda + V^2 + \omega^2]}_{g} dt \;,\;\; \lambda \; \text{constant}
+	\end{equation}
+	
+	Subject to:
+	\begin{equation}
+	\begin{aligned}
+	\dot{x} &= V\cos\theta \\
+	\dot{y} &= V\sin\theta \\
+	\dot{\theta} &= \omega
+	\end{aligned}
+	\end{equation}
+	
+	Boundary conditions:
+	\begin{equation}
+	{\renewcommand{\arraystretch}{1.4}
+	\begin{tabular}[c]{c c c}
+		$x(0) = 0$ & $y(0) = 0$ & $\theta(0)$ = $-\frac{\pi}{2}$ \\
+		$x(t_f) = 5$ & $y(t_f) = 5$ & $\theta(t_f) = -\frac{\pi}{2}$
+	\end{tabular}}
+	\end{equation}
+	
+	\hrulefill
+	
+	We follow the procedure outlined in lecture 5.
+	
+	Let:
+	\begin{equation}
+	\dot{\bm{x}} =
+	\begin{bmatrix}
+	\dot x \\
+	\dot y \\
+	\dot \theta
+	\end{bmatrix} \; , \;
+	\bm{u} = 
+	\begin{bmatrix}
+	V \\
+	\omega
+	\end{bmatrix} \; , \;
+	\bm f = 
+	\begin{bmatrix}
+	V\cos\theta \\
+	V\sin\theta \\
+	\omega
+	\end{bmatrix}
+	\end{equation}
+	
+	1. First, we need the Hamiltonian for the system:
+	\begin{equation}
+	\begin{aligned}
+	\mathcal{H} &= g + \bm p^\mathsf{T} \bm f \\
+	\mathcal{H} &= \lambda + V^2 + \omega^2 +
+	               p_1 V\cos\theta + p_2 V\sin\theta + p_3 \omega
+	\end{aligned}
+	\end{equation}
+	
+	2. Next, we find the NOCs, which are defined by:
+	\begin{equation}
+	\begin{aligned}
+	\dot{\bm{x}}^* &= \frac{\partial \mathcal{H}}{\partial \bm{p}} \\
+	\dot{\bm{p}}^* &= -\frac{\partial \mathcal{H}}{\partial \bm{x}} \\
+	0 &= \frac{\partial \mathcal{H}}{\partial \bm{u}}
+	\end{aligned}
+	\end{equation}
+	
+	For our system, these correspond to $2n+m$ equations. To solve for $t_f$, we additionally define a dummy state variable $r$ such that $r=t_f$ and $\dot r=0$.
+	
+	The NOCs for our system are:
+	
+	\begin{equation}
+	{\renewcommand{\arraystretch}{1.4}
+	\begin{tabular}[c]{l l l l l}
+	$\dot x^* = V \cos\theta$ &\;&
+	$\dot p_1^* = 0$	&\;&
+	$0 = \frac{\partial\mathcal{H}}{\partial V}$ \\
+	
+	$\dot y^* = V \sin\theta$ &\;&
+	$\dot p_2^* = 0$	&\;&
+	$0 = \frac{\partial\mathcal{H}}{\partial \omega}$ \\
+	
+	$\dot \theta^* = \omega$ &\;&
+	$\dot p_3^* = p_1V\sin(\theta) - p_2V\cos(\theta)$ \\
+	
+	$\dot r^* = 0$
+	\end{tabular}}
+	\end{equation}
+	
+	Since
+	\begin{equation}
+	\begin{aligned}
+	\frac{\partial\mathcal{H}}{\partial \omega} = 2\omega + p_3 &= 0 \\
+	\omega &=-\frac{p_3}{2}
+	\end{aligned}
+	\end{equation}
+	
+	\pagebreak
+	
+	3. We need to have $2n+1$ boundary conditions to solve for the $2n$ differential equations plus 1 free variable $t_f$. With $x_f$ fixed and $t_f$ free, these are governed by:
+	
+	\begin{equation}
+	\begin{aligned}
+	x^*(t_0) &= x_0 \\
+	x^*(t_f) &= x_f \\
+	\mathcal{H} + \frac{\partial h}{\partial t} &= 0
+	\end{aligned}
+	\end{equation}
+	
+	In our case, $h=0$ as we don't have initial cost. These correspond to:
+	\begin{equation}
+	\begin{aligned}
+	&{\renewcommand{\arraystretch}{1.4}
+	\begin{tabular}[c]{l l l}
+	$\dot{x}^*(0) = 0$ & $\dot{x}^*(t_f) = 5$ \\
+	$\dot{y}^*(0) = 0$ & $\dot{y}^*(t_f) = 5$ \\
+	$\dot{\theta}^*(0) = -\frac{\pi}{2}$ & $\dot{\theta}^*(t_f) = -\frac{\pi}{2}$ \\
+	\end{tabular}} \\
+	&\lambda + V^2 + \omega^2 + p_1 V\cos\theta + p_2 V\sin\theta + p_3 \omega = 0
+	\end{aligned}
+	\end{equation}
+	
+	4. Now we need to rescale for time. Let $\tau$ be our new time scale such that:
+	\begin{equation}
+	\begin{aligned}
+	\tau &= \frac{t}{t_f} \;,\; \tau \in [0,1] \\
+	\frac{d}{d\tau} &= \frac{dt}{d\tau} \cdot \frac{d}{dt}   = t_f \frac{d}{dt}
+	\end{aligned}
+	\end{equation}
+	
+	Denoting $\frac{d}{d\tau}$ as $[.]'$, the NOCs become:
+	
+	\begin{equation}
+	{\renewcommand{\arraystretch}{1.4}
+	\begin{tabular}[c]{l l l l l}
+	$x^{'*} = rV \cos\theta$ 	&\;&
+	$p_1^{'*} = 0$	&\;&
+	$0 = \frac{\partial\mathcal{H}}{\partial V}$ \\
+	
+	$y^{'*} = rV \sin\theta$ 	&\;&
+	$p_2^{'*} = 0$	&\;&
+	$0 = \frac{\partial\mathcal{H}}{\partial \omega}$ \\
+	
+	$\theta^{'*} = r\omega$ &\;&
+	$p_4^{'*} = rp_1V\sin(\theta) - rp_2V\cos(\theta)$ \\
+	
+	$r^{'*} = 0$
+	\end{tabular}}
+	\end{equation}
+	
+	The boundary conditions do not have $t$ terms, so the expressions remain the same.
 	
 	\item % (ii)
-	TODO
+	(code)
 	
 	\item % (iii)
 	TODO

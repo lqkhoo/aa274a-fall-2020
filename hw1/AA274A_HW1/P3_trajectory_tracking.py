@@ -67,9 +67,9 @@ class TrajectoryTracker:
         xdot = V * np.cos(th)
         ydot = V * np.sin(th)
 
-        w_x = xdd_d + kpx*(x_d - x) + kdx*(xd_d - xdot)
-        w_y = ydd_d + kpy*(y_d - y) + kdy*(yd_d - ydot)
-        ## Characteristic equation A=1, B=k_1, C=k_2
+        w_x = xdd_d + kdx*(xd_d - xdot) + kpx*(x_d - x)
+        w_y = ydd_d + kdy*(yd_d - ydot) + kpy*(y_d - y)
+        ## Characteristic equation A=1, B=k_d, C=k_p
         ## Critical damping when B^2=4AC = 0.
 
         w = np.array([w_x, w_y])
