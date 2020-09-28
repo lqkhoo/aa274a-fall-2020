@@ -418,9 +418,9 @@ Since $\det(\bm{J})=V$, $V>0\; \forall t$ is a sufficient and necessary conditio
 	\begin{aligned}
 	&{\renewcommand{\arraystretch}{1.4}
 	\begin{tabular}[c]{l l l}
-	$\dot{x}^*(0) = 0$ & $\dot{x}^*(t_f) = 5$ \\
-	$\dot{y}^*(0) = 0$ & $\dot{y}^*(t_f) = 5$ \\
-	$\dot{\theta}^*(0) = -\frac{\pi}{2}$ & $\dot{\theta}^*(t_f) = -\frac{\pi}{2}$ \\
+	$x^*(0) = 0$ & $x^*(t_f) = 5$ \\
+	$y^*(0) = 0$ & $y^*(t_f) = 5$ \\
+	$\theta^*(0) = -\frac{\pi}{2}$ & $\theta^*(t_f) = -\frac{\pi}{2}$ \\
 	\end{tabular}} \\
 	&\lambda + V^2 + \omega^2 + p_1 V\cos\theta + p_2 V\sin\theta + p_3 \omega = 0
 	\end{aligned}
@@ -460,13 +460,25 @@ Since $\det(\bm{J})=V$, $V>0\; \forall t$ is a sufficient and necessary conditio
 	(code)
 	
 	\item % (iii)
-	TODO
+	\begin{tabular}[t]{c}
+		\hline \\
+		\includegraphics[width=1.0\textwidth]{img/optimal_control.png} \\
+		Trajectory of unicycle model as solved by nonlinear optimization.\\
+		\hline
+	\end{tabular}
 	
 	\item % (iv)
-	TODO
+	The larger $\lambda$ is, the larger the emphasis the solver puts on minimizing time.
+
+	\pagebreak
 
 	\item % (v)
-	TODO
+	\begin{tabular}[t]{c}
+		\hline \\
+		\includegraphics[width=1.0\textwidth]{img/sim_traj_optimal_control.png} \\
+		Comparison of open-loop trajectory and optimized trajectory in presence of isotropic Gaussian noise. \\
+		\hline
+	\end{tabular}
 	
 	
 	\end{enumerate}

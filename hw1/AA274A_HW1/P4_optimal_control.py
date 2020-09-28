@@ -22,7 +22,7 @@ def ode_fun(tau, z):
     ### H is a function of z
 
     ### From the Hamiltonian,
-    # dH_dV = 2*V - p_1*V*np.sin(theta) + p_2*V*np.cos(theta)
+    # dH_dV = 2*V + p1*V*np.cos(theta) + p2*V*np.sin(theta)
     # dH_domega = 2*omega + p_3
 
     ### From dH_du = 0
@@ -73,7 +73,7 @@ def bc_fun(za, zb):
     x0 = [0, 0, -np.pi/2.0]
 
     ########## Code starts here ##########
-    LAMBDA = 0.5
+    LAMBDA = 0.9
 
     (x_0, y_0, theta_0, p1_0, p2_0, p3_0, r_0) = za
     (x_f, y_f, theta_f, p1_f, p2_f, p3_f, r_f) = zb
@@ -134,8 +134,6 @@ def compute_controls(z):
     ########## Code starts here ##########
     zt = z.T # shape[states, time]
     (x, y, theta, p1, p2, p3, r) = zt # Unpack individual trajectories
-
-    print(x[0])
 
     V = -(p1*np.cos(theta) + p2*np.sin(theta)) / 2.0
     om = -p3 / 2.0

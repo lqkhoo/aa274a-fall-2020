@@ -35,6 +35,8 @@ class PoseController:
         """
         ########## Code starts here ##########
         k1, k2, k3 = self.k1, self.k2, self.k3
+        x_g, y_g, th_g = self.x_g, self.y_g, self.th_g
+
 
         # These are given by equation (8) in lecture 4 notes, which
         # are derived by Lyapunov analysis.
@@ -51,6 +53,7 @@ class PoseController:
         # Clip velocity once we hit the requested threshold.
         if rho < RHO_THRES and alpha < ALPHA_THRES and delta < DELTA_THRES:
             V = 0
+            om = 0
         
         ########## Code ends here ##########
 
