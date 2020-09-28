@@ -47,6 +47,10 @@ class PoseController:
         # M. Aicardi et. al. 1995.
         V = k1 * rho * np.cos(alpha)
         om = k2 * alpha + k1 * np.sinc(alpha) * np.cos(alpha) * (alpha + k3 * delta)
+
+        # Clip velocity once we hit the requested threshold.
+        if rho < RHO_THRES and alpha < ALPHA_THRES and delta < DELTA_THRES:
+            V = 0
         
         ########## Code ends here ##########
 

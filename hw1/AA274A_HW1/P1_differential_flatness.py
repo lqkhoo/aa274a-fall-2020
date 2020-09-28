@@ -123,23 +123,28 @@ def compute_controls(traj):
     """
     ########## Code starts here ##########
 
-    traj = traj.T
-    x, y, theta, xdot, ydot, xddot, yddot = traj
+    N = traj.shape[0]
 
-    # V could be calculated directly from xdot(t) = Vcos(\theta) etc etc.
-    # We need to solve the matrix given by equation (2) to find \omega.
+    # Split into individual trajectories of shape(1, N)
+    traj = traj.T
+    (x, y, theta, xdot, ydot, xddot, yddot) = traj
 
     # Cache
     cos_theta = np.cos(theta)
     sin_theta = np.sin(theta)
 
-    V = xdot / cos_theta # Any of these should work.
-    # V = ydot / sin_theta
-    # V = np.sqrt(xdot*xdot + ydot*ydot)
+    # V could be calculated directly from xdot(t) = Vcos(\theta) etc etc.
+    # We need to solve the matrix given by equation (2) to find \omega.
 
-    J = np.zeros((traj.shape[1], 2,2))
+    ### Any of these should work.
+    ### Actually first 2 options fail autograder for matrix singularity. Division by zero?
+    # V = xdot / cos_theta
+    # V = ydot / sin_theta
+    V = np.sqrt(xdot*xdot + ydot*ydot)
+
+    J = np.zeros((N, 2, 2))
     J[:,0,0] = cos_theta
-    J[:,0,1] = -1 * V * sin_theta
+    J[:,0,1] = -V * sin_theta
     J[:,1,0] = sin_theta
     J[:,1,1] = V * cos_theta
 
