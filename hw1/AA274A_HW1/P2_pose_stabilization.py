@@ -36,19 +36,30 @@ class PoseController:
         ########## Code starts here ##########
         k1, k2, k3 = self.k1, self.k2, self.k3
         x_g, y_g, th_g = self.x_g, self.y_g, self.th_g
+      
+        # Frame translation
+        x = x - x_g
+        y = y - y_g
 
+        # Frame rotation. Theta expressed in terms of original frame.
+        x_rot = x*np.cos(th_g) + y*np.sin(th_g)
+        y_rot = -x*np.sin(th_g) + y*np.cos(th_g)
+        x, y = x_rot, y_rot
+
+        # Relative angle
+        th = th - th_g
 
         # These are given by equation (8) in lecture 4 notes, which
         # are derived by Lyapunov analysis.
         rho = np.sqrt(x*x + y*y)
-        alpha = np.arctan2(y,x) - th + np.pi
-        delta = alpha + th
+        alpha = wrapToPi(np.arctan2(y,x) - th + np.pi)
+        delta = wrapToPi(alpha + th)
 
         # These are given by equation (4) in the problem set. Also slide 15 lecture 4.
         # Literature: Closed loop steering of unicycle-like vehicles via Lyapunov techniques.
         # M. Aicardi et. al. 1995.
         V = k1 * rho * np.cos(alpha)
-        om = k2 * alpha + k1 * np.sinc(alpha) * np.cos(alpha) * (alpha + k3 * delta)
+        om = k2 * alpha + k1 * np.sinc(alpha/np.pi) * np.cos(alpha) * (alpha + k3 * delta)
 
         # Clip velocity once we hit the requested threshold.
         if rho < RHO_THRES and alpha < ALPHA_THRES and delta < DELTA_THRES:
