@@ -57,6 +57,27 @@ class RRT(object):
         """
         raise NotImplementedError("steer_towards must be overriden by a subclass of RRT")
 
+
+    def sample_random_state(self):
+        """
+        Added helper method. Returns random state vector within valid bounds.
+        For this exercise, we are just using uniform random sampling.
+        """
+        return np.random.uniform(self.statespace_lo, self.statespace_hi, size=(1, len(self.x_init)))
+
+    def trace_path(self, V, P, cur_state_idx):
+        """
+        Added helper method. Constructs path from given state to root node
+        and sets self.path as equal to that path.
+        """
+        if self.path is None:
+            self.path = []
+        while cur_state_idx != -1:
+            self.path.append(V[cur_state_idx])
+            cur_state_idx = P[cur_state_idx]
+        self.path = self.path
+
+
     def solve(self, eps, max_iters=1000, goal_bias=0.05, shortcut=False):
         """
         Constructs an RRT rooted at self.x_init with the aim of producing a
@@ -104,7 +125,28 @@ class RRT(object):
         #     are meaningful! keep this in mind when using the helper functions!
 
         ########## Code starts here ##########
-        
+        for k in range(max_iters):
+
+            p = np.random.uniform(0, 1)
+
+            # An epsilon-random sampled point.
+            x_rand = self.x_goal if p < goal_bias else self.sample_random_state()
+            # Point in the tree that is closest (by distance metric) to x_rand.
+            x_near_idx = self.find_nearest(V[range(n),:], x_rand)
+            x_near = V[x_near_idx]
+            # Candidate point to be added to the tree if we detect no collisions.
+            x_new = self.steer_towards(x_near, x_rand, eps)
+
+            if self.is_free_motion(self.obstacles, x_near, x_new):
+                V[n,:] = x_new      # Add vertex
+                P[n] = x_near_idx   # Add edge between x_new to x_near.
+                n += 1              # Increment tree size
+
+                if np.all(x_new == self.x_goal): # Breaking condition
+                    self.trace_path(V, P, n)
+                    success = True
+                    break
+
         ########## Code ends here ##########
 
         plt.figure()
@@ -154,13 +196,17 @@ class GeometricRRT(RRT):
     def find_nearest(self, V, x):
         ########## Code starts here ##########
         # Hint: This should take one line.
-        
+
+        # This function expects V to have been already trimmed down to size
+        # without the zero entries.
+        # Returns the *index* of the closest node, not the node itself.
+        return np.argmin(np.linalg.norm(V - x, ord=2, axis=1))
         ########## Code ends here ##########
 
     def steer_towards(self, x1, x2, eps):
         ########## Code starts here ##########
         # Hint: This should take one line.
-        
+        return x1 + eps*(x2 - x1) # Linear interpolation
         ########## Code ends here ##########
 
     def is_free_motion(self, obstacles, x1, x2):

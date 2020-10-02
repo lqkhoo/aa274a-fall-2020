@@ -147,6 +147,7 @@ class AStar(object):
         return list(reversed(path))
 
     def plot_path(self, fig_num=0):
+
         """Plots the path found in self.path and the obstacles"""
         if not self.path:
             return
@@ -168,7 +169,6 @@ class AStar(object):
         px = [x[0] for x in self.open_set | self.closed_set if x != self.x_init and x != self.x_goal]
         py = [x[1] for x in self.open_set | self.closed_set if x != self.x_init and x != self.x_goal]
         plt.scatter(px, py, color="blue", s=point_size, zorder=10, alpha=0.2)
-
 
 
     def heuristic(self, x):
@@ -248,6 +248,8 @@ class AStar(object):
                 self.cost_to_arrive[x_neighbor] = tentative_cost_to_arrive
                 self.est_cost_through[x_neighbor] = tentative_cost_to_arrive + self.heuristic(x_neighbor)
 
+        # Track the path we found.
+        self.path = self.reconstruct_path()
 
         return is_path_found
         ########## Code ends here ##########
@@ -276,6 +278,7 @@ class DetOccupancyGrid2D(object):
 
     def plot(self, fig_num=0):
         """Plots the space and its obstacles"""
+
         fig = plt.figure(fig_num)
         for obs in self.obstacles:
             ax = fig.add_subplot(111, aspect='equal')
