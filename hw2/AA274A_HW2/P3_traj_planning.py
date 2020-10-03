@@ -27,7 +27,7 @@ class SwitchingController(object):
             V, om: Control actions
         """
         ########## Code starts here ##########
-
+        pass
         ########## Code ends here ##########
 
 def compute_smoothed_traj(path, V_des, alpha, dt):
@@ -48,7 +48,7 @@ def compute_smoothed_traj(path, V_des, alpha, dt):
     Hint: Use splrep and splev from scipy.interpolate
     """
     ########## Code starts here ##########
-    
+    pass
     ########## Code ends here ##########
 
     return traj_smoothed, t_smoothed
@@ -71,7 +71,7 @@ def modify_traj_with_limits(traj, t, V_max, om_max, dt):
     Hint: This should almost entirely consist of calling functions from Problem Set 1
     """
     ########## Code starts here ##########
-    
+    pass
     ########## Code ends here ##########
 
     return t_new, V_scaled, om_scaled, traj_scaled

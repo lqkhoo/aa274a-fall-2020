@@ -63,7 +63,7 @@ class RRT(object):
         Added helper method. Returns random state vector within valid bounds.
         For this exercise, we are just using uniform random sampling.
         """
-        return np.random.uniform(self.statespace_lo, self.statespace_hi, size=(1, len(self.x_init)))
+        return np.squeeze(np.random.uniform(self.statespace_lo, self.statespace_hi, size=(1, len(self.x_init))))
 
     def trace_path(self, V, P, cur_state_idx):
         """
@@ -72,10 +72,13 @@ class RRT(object):
         """
         if self.path is None:
             self.path = []
-        while cur_state_idx != -1:
-            self.path.append(V[cur_state_idx])
-            cur_state_idx = P[cur_state_idx]
-        self.path = self.path
+        
+        idx = cur_state_idx
+        while idx != -1:
+            self.path.append(V[idx])
+            idx = P[idx]
+        
+        self.path = list(reversed(self.path))
 
 
     def solve(self, eps, max_iters=1000, goal_bias=0.05, shortcut=False):
@@ -125,6 +128,7 @@ class RRT(object):
         #     are meaningful! keep this in mind when using the helper functions!
 
         ########## Code starts here ##########
+        self.path = []
         for k in range(max_iters):
 
             p = np.random.uniform(0, 1)
@@ -138,14 +142,16 @@ class RRT(object):
             x_new = self.steer_towards(x_near, x_rand, eps)
 
             if self.is_free_motion(self.obstacles, x_near, x_new):
-                V[n,:] = x_new      # Add vertex
-                P[n] = x_near_idx   # Add edge between x_new to x_near.
-                n += 1              # Increment tree size
+                V[n,:] = x_new              # Add vertex
+                x_new_idx = n
+                P[x_new_idx] = x_near_idx   # Add edge between x_new to x_near.
 
                 if np.all(x_new == self.x_goal): # Breaking condition
                     self.trace_path(V, P, n)
                     success = True
                     break
+
+                n += 1                      # Increment tree size
 
         ########## Code ends here ##########
 
@@ -185,6 +191,51 @@ class RRT(object):
         """
         ########## Code starts here ##########
         
+        path = self.path
+        k = len(path)
+        
+        # This is our doubly-linked list.
+        # When we remove a node,
+        # we reassign the node's current child to the node's parent,
+        # and the node's current parent to the node's child.
+        # idx is zero-indexed sequence of nodes in non-shortcut path.
+        P = np.linspace(0, k-1, k, dtype=np.int) - 1 # P[n] returns the idx of parent of nth node in path
+        C = np.linspace(0, k-1, k, dtype=np.int) + 1 # C[n] returns the idx of child of nth node in path
+
+        for i in range(k):
+            # print("Current i: {}".format(i))
+            # print("P {}".format(P))
+            # print("C {}".format(C))
+
+            node = path[i]
+            if np.all(node == self.x_init) or np.all(node == self.x_goal):
+                continue
+
+            parent = path[P[i]]
+            child = path[C[i]]
+            if self.is_free_motion(self.obstacles, parent, child):
+                # Drop current node. This means:
+                P[C[i]] = P[i] # The parent of our child is now our parent (it was us)
+                C[P[i]] = C[i] # The child of our parent is now our child (it was us)
+                P[i] = -2      # This is just for notational clarity. Removed nodes don't have 
+                C[i] = -2      # either parent or child.
+                continue
+
+        # Once we're done, just trace the children till we reach the end.
+        shortcut = []
+        idx = 0
+        node = path[idx]
+        shortcut.append(node)
+        while True:
+            idx = C[idx]
+            if idx == len(C):
+                break
+            else:
+                node = path[idx]
+                shortcut.append(node)
+
+        self.path = shortcut
+        
         ########## Code ends here ##########
 
 class GeometricRRT(RRT):
@@ -206,7 +257,9 @@ class GeometricRRT(RRT):
     def steer_towards(self, x1, x2, eps):
         ########## Code starts here ##########
         # Hint: This should take one line.
-        return x1 + eps*(x2 - x1) # Linear interpolation
+        dx = np.linalg.norm(x1 - x2, ord=2)
+        x = x2 if dx < eps else x1 + eps*(x2 - x1) # Linear interpolation
+        return x
         ########## Code ends here ##########
 
     def is_free_motion(self, obstacles, x1, x2):
@@ -242,7 +295,15 @@ class DubinsRRT(RRT):
     def find_nearest(self, V, x):
         from dubins import path_length
         ########## Code starts here ##########
-        
+        min_path_length = np.inf
+        min_path_idx = None
+        for i in range(V.shape[0]):
+            le = path_length(np.ndarray.squeeze(V[i]), x, self.turning_radius)
+            if le < min_path_length:
+                min_path_length = le
+                min_path_idx = i
+        return min_path_idx
+
         ########## Code ends here ##########
 
     def steer_towards(self, x1, x2, eps):
@@ -256,7 +317,15 @@ class DubinsRRT(RRT):
         distance eps (using self.turning_radius) due to numerical precision
         issues.
         """
-        
+        from dubins import path_sample, path_length
+        rho = 1.001 * self.turning_radius
+        dx = path_length(x1, x2, rho)
+        if dx <= eps:
+            x = x2
+        else:
+            samples, b = path_sample(x1, x2, rho, eps)
+            x = samples[1]
+        return x
         ########## Code ends here ##########
 
     def is_free_motion(self, obstacles, x1, x2, resolution = np.pi/6):
