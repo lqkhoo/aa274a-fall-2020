@@ -298,12 +298,13 @@ class DubinsRRT(RRT):
         min_path_length = np.inf
         min_path_idx = None
         for i in range(V.shape[0]):
+            # For kinodynamic models, the distance function is generally not symmetric.
+            # This has to be from V to x.
             le = path_length(np.ndarray.squeeze(V[i]), x, self.turning_radius)
             if le < min_path_length:
                 min_path_length = le
                 min_path_idx = i
         return min_path_idx
-
         ########## Code ends here ##########
 
     def steer_towards(self, x1, x2, eps):
@@ -323,7 +324,7 @@ class DubinsRRT(RRT):
         if dx <= eps:
             x = x2
         else:
-            samples, b = path_sample(x1, x2, rho, eps)
+            samples, _ = path_sample(x1, x2, rho, eps)
             x = samples[1]
         return x
         ########## Code ends here ##########

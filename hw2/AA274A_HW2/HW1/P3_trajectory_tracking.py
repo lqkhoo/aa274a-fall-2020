@@ -58,8 +58,34 @@ class TrajectoryTracker:
         x_d, xd_d, xdd_d, y_d, yd_d, ydd_d = self.get_desired_state(t)
 
         ########## Code starts here ##########
-        V = 0
-        om = 0
+        kpx, kdx, kpy, kdy = self.kpx, self.kdx, self.kpy, self.kdy
+
+        V_d = np.sqrt(x_d*x_d + y_d*y_d) # V_nominal
+        V = np.maximum(self.V_prev, V_PREV_THRES)
+        ## print("V_d:{:5f} V:{:5f}".format(V_d, V))
+
+        xdot = V * np.cos(th)
+        ydot = V * np.sin(th)
+
+        w_x = xdd_d + kdx*(xd_d - xdot) + kpx*(x_d - x)
+        w_y = ydd_d + kdy*(yd_d - ydot) + kpy*(y_d - y)
+        ## Characteristic equation A=1, B=k_d, C=k_p
+        ## Critical damping when B^2=4AC = 0.
+
+        w = np.array([w_x, w_y])
+        J = np.array([
+            [np.cos(th), -V*np.sin(th)],
+            [np.sin(th), V*np.cos(th)]
+        ])
+        u = np.linalg.solve(J, w)
+
+        a, om = u
+        delta_v = a * (t - self.t_prev)
+        V = self.V_prev + delta_v
+        if V < V_PREV_THRES:
+            v = np.maximum(V_d, V_PREV_THRES)
+        ## print("t:{}, dv:{}".format(t, delta_v))
+
         ########## Code ends here ##########
 
         # apply control limits
