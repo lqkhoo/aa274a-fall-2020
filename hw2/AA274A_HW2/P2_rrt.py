@@ -63,7 +63,8 @@ class RRT(object):
         Added helper method. Returns random state vector within valid bounds.
         For this exercise, we are just using uniform random sampling.
         """
-        return np.squeeze(np.random.uniform(self.statespace_lo, self.statespace_hi, size=(1, len(self.x_init))))
+        lo, hi, D = self.statespace_lo, self.statespace_hi, len(self.x_init)
+        return np.squeeze(np.random.uniform(lo, hi, size=(1, D)))
 
     def trace_path(self, V, P, cur_state_idx):
         """
@@ -145,13 +146,14 @@ class RRT(object):
                 V[n,:] = x_new              # Add vertex
                 x_new_idx = n
                 P[x_new_idx] = x_near_idx   # Add edge between x_new to x_near.
+                n += 1                      # Increment tree size
 
                 if np.all(x_new == self.x_goal): # Breaking condition
-                    self.trace_path(V, P, n)
+                    self.trace_path(V, P, n-1)   # n points to empty space at the moment.
                     success = True
                     break
 
-                n += 1                      # Increment tree size
+                
 
         ########## Code ends here ##########
 
@@ -258,7 +260,10 @@ class GeometricRRT(RRT):
         ########## Code starts here ##########
         # Hint: This should take one line.
         dx = np.linalg.norm(x1 - x2, ord=2)
-        x = x2 if dx < eps else x1 + eps*(x2 - x1) # Linear interpolation
+        if dx < eps:
+            x = x2
+        else:
+            x = x1 + eps*(x2 - x1) / dx # Linear interpolation
         return x
         ########## Code ends here ##########
 
@@ -321,7 +326,7 @@ class DubinsRRT(RRT):
         from dubins import path_sample, path_length
         rho = 1.001 * self.turning_radius
         dx = path_length(x1, x2, rho)
-        if dx <= eps:
+        if dx < eps:
             x = x2
         else:
             samples, _ = path_sample(x1, x2, rho, eps)

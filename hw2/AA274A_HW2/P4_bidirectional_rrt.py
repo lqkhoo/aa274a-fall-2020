@@ -89,6 +89,52 @@ class RRTConnect(object):
         """
         raise NotImplementedError("steer_towards_backward must be overriden by a subclass of RRTConnect")
 
+
+    def plot_path(self, **kwargs):
+        raise NotImplementedError("")
+
+    def plot_tree(self, V, P, **kwargs):
+        raise NotImplementedError("")
+
+    def plot_tree_backward(self, V, P, **kwargs):
+        raise NotImplementedError("")
+
+
+    def sample_random_state(self):
+        """
+        Added helper method. Returns random state vector within valid bounds.
+        For this exercise, we are just using uniform random sampling.
+        """
+        lo, hi, D = self.statespace_lo, self.statespace_hi, len(self.x_init)
+        return np.squeeze(np.random.uniform(lo, hi, size=(1, D)))
+
+    def trace_path(self, V_fw, V_bw, P_fw, P_bw, n_fw, n_bw):
+        """
+        Added helper method. Reconstructs path for RTT-Connect.
+        """
+        
+        self.path = []  # Reset path
+
+        fw_path = []
+        bw_path = []
+
+        # Forward path
+        idx = n_fw
+        # print("Common point: {}".format(V_fw[idx]))
+        while idx != -1:
+            fw_path.append(V_fw[idx])
+            idx = P_fw[idx]
+
+        # Backward path
+        idx = n_bw
+        while idx != -1:
+            bw_path.append(V_bw[idx])
+            idx = P_bw[idx]
+        
+        bw_path = list(reversed(bw_path[1:])) # We don't want the first point here 'coz it's repeated
+        self.path.extend(fw_path)
+        self.path.extend(bw_path)
+
     def solve(self, eps, max_iters = 1000):
         """
         Uses RRT-Connect to perform bidirectional RRT, with a forward tree
@@ -132,7 +178,132 @@ class RRTConnect(object):
         # Hint: Use your implementation of RRT as a reference
 
         ########## Code starts here ##########
-        pass #TODO
+
+        V_fw[0,:] = self.x_init
+        V_bw[0,:] = self.x_goal
+        n_fw = 1
+        n_bw = 1
+
+        is_path_found = False
+        is_out_of_memory = False
+
+        n_iters = 0
+        while (n_iters < max_iters and      # Set this way because otherwise we can run out
+                n_fw < max_iters and        # of space for P and V
+                n_bw < max_iters):
+
+            #DIR = directionally-sensitive command
+
+            # A randomly-sampled point.
+            x_rand = self.sample_random_state()
+            # Point in the forward tree closest by forward distance to x_rand.
+            x_near_idx = self.find_nearest_forward(V_fw[range(n_fw),:], x_rand)         #DIR
+            x_near = V_fw[x_near_idx]
+            # New candidate point to be added to the tree if we detect no collisions.
+            x_new = self.steer_towards_forward(x_near, x_rand, eps)                     #DIR
+            
+            if self.is_free_motion(self.obstacles, x_near, x_new):                      #DIR
+                V_fw[n_fw,:] = x_new            # Add vertex.
+                x_new_idx = n_fw
+                P_fw[x_new_idx] = x_near_idx    # Add edge between x_new and x_near.
+                n_fw += 1                       # Increment fw tree size
+
+                # Point closest to new candidate in the other (backward) tree.
+                x_conn_idx = self.find_nearest_backward(V_bw[range(n_bw),:], x_new)     #DIR
+                x_conn = V_bw[x_conn_idx]
+                
+                # Now we keep trying to extend from the backward tree towards x_new
+                # until we either hit a wall or join up with x_new
+                while True:
+
+                    x_newconn = self.steer_towards_backward(x_new, x_conn, eps)         #DIR
+
+                    if self.is_free_motion(self.obstacles, x_conn, x_newconn):          #DIR
+                        V_bw[n_bw,:] = x_newconn             # Add vertex
+                        x_newconn_idx = n_bw
+                        P_bw[x_newconn_idx] = x_conn_idx     # Add edge between x_conn and x_newconn
+                        n_bw += 1                            # Increment bw tree size
+
+                        if n_bw >= max_iters:
+                            is_out_of_memory = True
+                            break # We're out of space
+
+                        if np.all(x_newconn == x_new): # Breaking condition
+                            is_path_found = True
+                            # Notice that at this point in time, both n_fw-1 and p_fw-1 are
+                            # pointing towards x_new.
+                            self.trace_path(V_fw, V_bw, P_fw, P_bw, n_fw-1, n_bw-1)
+                            break
+
+                        x_conn = x_newconn
+
+                    else:
+                        break # We've hit a wall
+
+                # We do this here because the inner loop does not involve the forward tree.
+                if n_fw >= max_iters:
+                    is_out_of_memory = True
+                    break # We're out of space
+
+            if is_path_found or is_out_of_memory:
+                break # If we've already found a path we don't want to continue any further.
+
+            # Now we just do the exact same thing from the other tree.
+
+            x_rand = self.sample_random_state()
+            x_near_idx = self.find_nearest_backward(V_bw[range(n_bw),:], x_rand)        #DIR
+            x_near = V_bw[x_near_idx]
+
+            # Want to steer from x_near to x_rand, but backwards since this is bw tree
+            x_new = self.steer_towards_backward(x_rand, x_near, eps)                    #DIR
+
+            # Check whether we can move from x_new to x_near (of backward tree)
+            if self.is_free_motion(self.obstacles, x_new, x_near):                      #DIR
+                V_bw[n_bw,:] = x_new
+                x_new_idx = n_bw
+                P_bw[x_new_idx] = x_near_idx
+                n_bw += 1
+
+                x_conn_idx = self.find_nearest_forward(V_fw[range(n_fw),:], x_new)      #DIR
+                x_conn = V_fw[x_conn_idx]
+
+                while True:
+                    # x_new is rooted on bw tree.
+                    x_newconn = self.steer_towards_forward(x_conn, x_new, eps)          #DIR
+
+                    # x_conn is rooted on fw tree.
+                    # We want to move from x_conn to x_newconn
+                    if self.is_free_motion(self.obstacles, x_conn, x_newconn):          #DIR
+                        V_fw[n_fw,:] = x_newconn
+                        x_newconn_idx = n_fw
+                        P_fw[x_newconn_idx] = x_conn_idx
+                        n_fw += 1
+
+                        if n_fw >= max_iters:
+                            is_out_of_memory = True
+                            break # Otherwise we run out of space.
+
+                        if np.all(x_newconn == x_new):
+                            is_path_found = True
+                            self.trace_path(V_fw, V_bw, P_fw, P_bw, n_fw-1, n_bw-1)
+                            break
+
+                        x_conn = x_newconn
+
+                    else:
+                        break
+
+                if n_bw >= max_iters:
+                    is_out_of_memory = True
+                    break # We're out of space
+
+            if is_path_found or is_out_of_memory:
+                break
+
+            n_iters += 1
+
+        print("found: {}".format(is_path_found))
+        print("outofmem: {}".format(is_out_of_memory))
 
         ########## Code ends here ##########
 
@@ -163,10 +334,14 @@ class GeometricRRTConnect(RRTConnect):
     between two points is a straight line (Euclidean metric)
     """
 
+    def __init__(self, statespace_lo, statespace_hi, x_init, x_goal, obstacles):
+        super(self.__class__, self).__init__(statespace_lo, statespace_hi, x_init, x_goal, obstacles)
+
     def find_nearest_forward(self, V, x):
         ########## Code starts here ##########
         # Hint: This should take one line.
-        pass #TODO
+        # Returns the *index* of the closest node, not the node itself.
+        return np.argmin(np.linalg.norm(V - x, ord=2, axis=1))
         ########## Code ends here ##########
 
     def find_nearest_backward(self, V, x):
@@ -175,7 +350,9 @@ class GeometricRRTConnect(RRTConnect):
     def steer_towards_forward(self, x1, x2, eps):
         ########## Code starts here ##########
         # Hint: This should take one line.
-        pass #TODO
+        dx = np.linalg.norm(x1 - x2, ord=2)
+        x = x2 if dx < eps else x1 + eps*(x2 - x1) / dx # Linear interpolation
+        return x
         ########## Code ends here ##########
 
     def steer_towards_backward(self, x1, x2, eps):
@@ -229,22 +406,53 @@ class DubinsRRTConnect(RRTConnect):
 
     def find_nearest_forward(self, V, x):
         ########## Code starts here ##########
-        pass #TODO
+        min_path_length = np.inf
+        min_path_idx = None
+        for i in range(V.shape[0]):
+            le = path_length(np.ndarray.squeeze(V[i]), x, self.turning_radius)
+            if le < min_path_length:
+                min_path_length = le
+                min_path_idx = i
+        return min_path_idx
         ########## Code ends here ##########
 
     def find_nearest_backward(self, V, x):
         ########## Code starts here ##########
-        pass #TODO
+        min_path_length = np.inf
+        min_path_idx = None
+        for i in range(V.shape[0]):
+            # For backward tree we want to go from some point x towards the root V
+            le = path_length(x, np.ndarray.squeeze(V[i]), self.turning_radius)
+            if le < min_path_length:
+                min_path_length = le
+                min_path_idx = i
+        return min_path_idx
         ########## Code ends here ##########
 
     def steer_towards_forward(self, x1, x2, eps):
         ########## Code starts here ##########
-        pass #TODO
+        rho = 1.001 * self.turning_radius
+        dx = path_length(x1, x2, rho)
+        if dx < eps:
+            x = x2
+        else:
+            samples, _ = path_sample(x1, x2, rho, eps)
+            x = samples[1]
+        return x
         ########## Code ends here ##########
 
     def steer_towards_backward(self, x1, x2, eps):
         ########## Code starts here ##########
-        pass #TODO
+        rho = 1.001 * self.turning_radius
+        dx = path_length(x1, x2, rho)
+        if dx < eps:
+            x = x1
+        else:
+            x1_rev = self.reverse_heading(x1)
+            x2_rev = self.reverse_heading(x2)
+            samples, _ = path_sample(x2_rev, x1_rev, rho, eps)
+            x = self.reverse_heading(samples[1])
+        return x
         ########## Code ends here ##########
 
     def is_free_motion(self, obstacles, x1, x2, resolution = np.pi/6):
