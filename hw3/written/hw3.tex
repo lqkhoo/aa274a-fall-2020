@@ -157,7 +157,7 @@ Naive implementation as above using a loop: Runtimes are 0.79, 1.36, 0.77, 0.80 
 
 Vectorized implementation batching all image pixels: Runtimes are 0.13, 7.55, 0.12, 0.34 seconds.
 
-To answer the first hint, no it does not. For a mono-channel image, each individual patch could be flattened and stacked into a $u\cdot v$ by $h\cdot w$ array and processed in parallel.
+To answer the first hint, no, G does not have to run sequentially pixel by pixel. For a mono-channel image, each individual patch could be flattened and stacked into a $u\cdot v$ by $h\cdot w$ array and processed in parallel.
 
 To answer the second hint, the total number of addmul operations are $u \cdot v \cdot w \cdot h$ as we are applying a filter with a receptive field of $u$ by $v$ over a single-channel input of size $w$ by $h$. If the filter could be expressed as an outer product, the total cost would be $(u+v) \cdot w \cdot h$.
 

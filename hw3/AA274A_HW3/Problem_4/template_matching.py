@@ -17,7 +17,32 @@ def template_match(template, image, threshold=0.999):
         matches: A list of (top-left y, top-left x, bounding box height, bounding box width) tuples for each match's bounding box.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+
+    F, I, t = template, image, threshold
+    f, g, c = F.shape
+    m, n, _ = I.shape
+
+    # Num of pixels to pad by
+    px = int(np.floor(f / 2))
+    py = int(np.floor(g / 2))
+
+    I_padded = np.pad(I, ((px, px), (py, py), (0,0)), 'constant') # Don't pad channels
+    bboxes = []
+
+    # Naive loopy version
+    cfg = c*f*g # length of our vectors
+    Fvec = np.reshape(F, cfg, order='C')
+    Fnorm = np.linalg.norm(Fvec)
+    for u in range(m): # rows
+        for v in range(n): # cols
+            Ivec = I_padded[u:u+f, v:v+g, :] # (f, g, c)-shaped slice from padded image
+            Ivec = np.reshape(Ivec, cfg, order='C')
+            Inorm = np.linalg.norm(Ivec)
+            sim = np.dot(Fvec, Ivec) / Fnorm / Inorm
+            if sim > t:
+                bboxes.append((u, v, f, g))
+
+    return bboxes
     ########## Code ends here ##########
 
 
