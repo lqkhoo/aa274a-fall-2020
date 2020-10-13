@@ -15,15 +15,15 @@ def corr(F, I):
     Returns
         G: An (m, n)-shaped ndarray containing the correlation of the filter with the image.
     """
-    ########## Code starts here ##########
+    ########## Code starts here ##########  
 
     # rename k, ell to f, g
     f, g, c = F.shape
     m, n, _ = I.shape
 
     # Num of pixels to pad by
-    pad_x = np.ceil((m - 1) / 2)
-    pad_y = np.ceil((n - 1) / 2)
+    px = int(np.floor(f / 2))
+    py = int(np.floor(g / 2))
 
     # For our convenience, for filters of even dimension we bias to
     # the lower or right cell as center. This means we just 'convolve'
@@ -31,21 +31,45 @@ def corr(F, I):
     # as reference for the filter according to the Pset,
     # starting from (0,0) at top left of the image.
 
-    I_padded = np.pad(I, (pad_x, pad_y))
-    G = np.zeros((m,n))
-
+    I_padded = np.pad(I, ((px, px), (py, py), (0,0)), 'constant') # Don't pad channels
+    
+    """
+    # Naive loopy version
+    # runtime .79, 1.36, .77, .80
+    cfg = c*f*g # length of our vectors
+    Fvec = np.reshape(F, cfg, order='C')
+    G = np.zeros((m, n))
     for u in range(m): # rows
         for v in range(n): # cols
-
-            Fvec = np.transpose(F, axes=(1,2,0)) # Permute to (c, f, g)
-            Fvec = np.reshape(c*f*g, order='C')
-
-            Ivec = I_padded[m:m+f, n:n+g, :] # (f, g, c)-shaped slice from padded image
-            Ivec = np.transpose(I, axes=(1,2,0)) # Permute to (c, m, n)
-            Ivec = np.reshape(c*m*n, order='C')
-
+            Ivec = I_padded[u:u+f, v:v+g, :] # (f, g, c)-shaped slice from padded image
+            Ivec = np.reshape(Ivec, cfg, order='C')
             G[u,v] = np.dot(Fvec, Ivec)
+    return G
+    """
 
+    # Implementation with array indexing
+    # Runtimes 0.13, 7.55, 0.12, 0.34
+    cfg = c*f*g
+    Fvec = np.reshape(F, cfg, order='C')
+    
+    # Generate indices
+    x_starts = np.arange(0, m)   # All possible start positions
+    x_ends   = np.arange(f, f+m) # All possible end positions
+    x_idxs = np.linspace(x_starts, x_ends, num=f, axis=1, endpoint=False, dtype=np.int)
+    x_idxs = np.repeat(x_idxs, g, axis=1) # This accounts for height of filter
+    x_idxs = np.repeat(x_idxs, n, axis=0) # Repeat y times
+    # Shape should be (m*n, f*g). For each point in mxn image, we need to select f*g coords.
+
+    y_starts = np.arange(0, n)   # All possible start positions
+    y_ends   = np.arange(g, g+n) # All possible end positions
+    y_idxs = np.linspace(y_starts, y_ends, num=g, axis=1, endpoint=False, dtype=np.int) # This goes [0,1,2], [1,2,3], [2,3,4],...
+    y_idxs = np.tile(y_idxs, (m, f)) # Tile x times and account for width of filter
+    # Shape should be (m*n, f*g).
+
+    Ivec = I_padded[x_idxs, y_idxs, :] # shape (m*n, f, g)
+    Ivec = np.reshape(Ivec, (m*n, -1), order="C") # Shape (m*n, f*g)
+    G = np.dot(Ivec, Fvec)
+    G = np.reshape(G, (m, n))
     return G
 
     ########## Code ends here ##########
@@ -61,7 +85,36 @@ def norm_cross_corr(F, I):
         G: An (m, n)-shaped ndarray containing the normalized cross-correlation of the filter with the image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+
+    # rename k, ell to f, g
+    f, g, c = F.shape
+    m, n, _ = I.shape
+
+    # Num of pixels to pad by
+    px = int(np.floor(f / 2))
+    py = int(np.floor(g / 2))
+
+    # For our convenience, for filters of even dimension we bias to
+    # the lower or right cell as center. This means we just 'convolve'
+    # the padded image m across and n down, using the top-left coordinate
+    # as reference for the filter according to the Pset,
+    # starting from (0,0) at top left of the image.
+
+    I_padded = np.pad(I, ((px, px), (py, py), (0,0)), 'constant') # Don't pad channels
+    
+    # Naive loopy version
+    cfg = c*f*g # length of our vectors
+    Fvec = np.reshape(F, cfg, order='C')
+    Fnorm = np.linalg.norm(Fvec)
+    G = np.zeros((m, n))
+    for u in range(m): # rows
+        for v in range(n): # cols
+            Ivec = I_padded[u:u+f, v:v+g, :] # (f, g, c)-shaped slice from padded image
+            Ivec = np.reshape(Ivec, cfg, order='C')
+            Inorm = np.linalg.norm(Ivec)
+            G[u,v] = np.dot(Fvec, Ivec) / Fnorm / Inorm
+    return G
+
     ########## Code ends here ##########
 
 
