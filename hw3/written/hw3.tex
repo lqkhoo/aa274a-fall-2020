@@ -153,7 +153,9 @@ G(i,j) =
 (code)
 
 \item % (iv)
-TODO report runtime.
+Naive implementation as above using a loop: Runtimes are 0.79, 1.36, 0.77, 0.80 seconds.
+
+Vectorized implementation batching all image pixels: Runtimes are 0.13, 7.55, 0.12, 0.34 seconds.
 
 To answer the first hint, no it does not. For a mono-channel image, each individual patch could be flattened and stacked into a $u\cdot v$ by $h\cdot w$ array and processed in parallel.
 
