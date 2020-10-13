@@ -16,7 +16,38 @@ def corr(F, I):
         G: An (m, n)-shaped ndarray containing the correlation of the filter with the image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+
+    # rename k, ell to f, g
+    f, g, c = F.shape
+    m, n, _ = I.shape
+
+    # Num of pixels to pad by
+    pad_x = np.ceil((m - 1) / 2)
+    pad_y = np.ceil((n - 1) / 2)
+
+    # For our convenience, for filters of even dimension we bias to
+    # the lower or right cell as center. This means we just 'convolve'
+    # the padded image m across and n down, using the top-left coordinate
+    # as reference for the filter according to the Pset,
+    # starting from (0,0) at top left of the image.
+
+    I_padded = np.pad(I, (pad_x, pad_y))
+    G = np.zeros((m,n))
+
+    for u in range(m): # rows
+        for v in range(n): # cols
+
+            Fvec = np.transpose(F, axes=(1,2,0)) # Permute to (c, f, g)
+            Fvec = np.reshape(c*f*g, order='C')
+
+            Ivec = I_padded[m:m+f, n:n+g, :] # (f, g, c)-shaped slice from padded image
+            Ivec = np.transpose(I, axes=(1,2,0)) # Permute to (c, m, n)
+            Ivec = np.reshape(c*m*n, order='C')
+
+            G[u,v] = np.dot(Fvec, Ivec)
+
+    return G
+
     ########## Code ends here ##########
 
 
