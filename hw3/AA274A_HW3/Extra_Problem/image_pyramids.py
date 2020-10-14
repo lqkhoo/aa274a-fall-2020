@@ -67,9 +67,6 @@ def bilinterp_upscale(image, scale):
     f = np.expand_dims(f, axis=0) # Making it (1, (2*scale)-1)-shaped
     filt = f.T * f
 
-    print(filt)
-    return
-
     ########## Code starts here ##########
 
     s = int(scale) # expects scale to be a power of 2.
