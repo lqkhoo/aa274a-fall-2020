@@ -165,7 +165,7 @@ Lastly, we could implement Winograd's minimal filtering algorithm that pre-compu
 
 
 \item % (v)
-We use the result that any $m\times n$ matrix of rank 1 could be expressed as a vector outer product $uv^\mathsf{T}$. This is obvious, because the column rank of any vector $u$ has to be equal to 1. To answer the question, if we know that a matrix is rank 1 and we simply wish to recover $u$ and $v^\mathsf{T}$, these correspond to the orthogonal matrices after performing SVD on the original matrix. Alternatively, $u$ could be any of its columns and $v$ is the single nonzero row left over after performing Gaussian elimination, up to a constant factor $k$.
+We use the result that any $m\times n$ matrix of rank 1 could be expressed as a vector outer product $uv^\mathsf{T}$. This is because the column rank of any vector $u$ has to be equal to 1. To answer the question, if we know that a matrix is rank 1 and we simply wish to recover $u$ and $v^\mathsf{T}$, these correspond to the orthogonal matrices after performing SVD on the original matrix. Alternatively, $u$ could be any of its columns and $v$ is the single nonzero row left over after performing Gaussian elimination, up to a constant factor $k$.
 
 Additionally, it is easy to see that for any $m\times n$ matrix of rank $r$, we can express it as a linear combination of $r$ matrices, which themselves could be expressed as the outer product of the linearly independent rows and columns of the original matrix. This is a generalization of the above result.
 
@@ -182,7 +182,6 @@ G(i,j) = \sum_{u=1}^k\sum_{v=1}^l F(u,v)\cdot I(i-u, j-v)
 \end{equation}
 
 
-	
 \end{enumerate}
 
 
@@ -195,7 +194,14 @@ G(i,j) = \sum_{u=1}^k\sum_{v=1}^l F(u,v)\cdot I(i-u, j-v)
 (code)
 
 \item % (iii)
-TODO
+Taking a page from data augmentation, we can:
+
+\begin{enumerate}
+\item Alter the color of the filter to improve matching for color variations.
+\item Perform rotation on the filter to account for rotated candidates.
+\end{enumerate}
+
+However, unlike a neural net implementation that learns and summarizes individual filters, our runtime would increase linearly with the number of filters we are applying on a given image. The upside is that this process is embarrasingly parallel.
 	
 \end{enumerate}
 
@@ -234,30 +240,79 @@ TODO
 (code)
 
 \item % (ii)
-We have lost high-frequency information as a by-product of our sampling process, specifically the signal or gradient between each adjacent pixel.
-TODO include image
+
+We have lost high-frequency information as a by-product of our sampling process, specifically the signal or gradient between each adjacent pixel. Notice that some of the vertical lines are completely missing.
+\begin{tabular}[t]{c}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/test_card_eighthscale.png} \\
+	1/8-sized image by discarding every other row and column 3 times. \\
+	\hline
+\end{tabular}
 
 \item % (iii)
 (code)
 
 \item % (iv)
 The Gaussian blur 'expanded' high frequency information along the x and y axes, so we preserve some component of those signals when sampling the image.
-TODO include image
+
+\begin{tabular}[t]{c}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/test_card_blur_eighthscale.png} \\
+	1/8-sized image with Gaussian blur (5x5 kernel) applied before discarding data. \\
+	\hline
+\end{tabular}
+
+\pagebreak
 
 \item % (v)
 (code)
 
 \item % (vi)
-We have simply expanded each pixel by 8x along each dimension. To look at it another way, we have simply created 8x8 identical subpixels within each original pixel.
+We have simply expanded each pixel by 8x along each dimension. To look at it another way, we have created 8x8 identical subpixels within each original pixel.
+
+\begin{tabular}[t]{c}
+	\hline \\
+	\includegraphics[width=0.5\textwidth]{img/favicon_upscale_8x.png} \\
+	Image expanded 8 times without bilinear interpolation. \\
+	\hline
+\end{tabular}
 
 \item % (vii)
-(code). I'm going to explain this in terms of a 2x upscaling. First of all, from the way we expanded the image, and how OpenCV zero-pads the boundaries, we have 'islands' of pixels spread apart by exactly the same distance which we want to expand the image by. Also, normalization works out as a sanity check: The kernel for 2x2 upscaling sums to 4. 'Striding' or expanding the image as described for a 2x2 upscale effectively divides each region by 4. When viewed along these 'islands' of original pixel values, the tent function is literally simply doing linear interpolation of values in between each island. Hence bilinear interpolation since we have two axes $x$ and $y$. We can see that without loss of generalization, this applies without loss of generalization to any upscaling which is a factor or 2.
+(code).
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.5\textwidth]{img/favicon_bilinear_8x.png} \\
+	Image expanded 8 times with bilinear interpolation. \\
+	\hline
+\end{tabular}
+
+Comparing the images: the intensity differences between the pixel regions are less abrupt.
+
+Informal explanation: I'm going to explain this in terms of a 2x upscaling. From the way we've expanded the image, and how OpenCV zero-pads the boundaries, we have 'islands' of pixels spread apart by exactly the same distance which we want to expand the image by. Also, normalization works out as a sanity check: The kernel for 2x2 upscaling sums to 4. 'Striding' or expanding the image as described for a 2x2 upscale effectively divides each region by 4. When viewed along these 'islands' of original pixel values, the tent function is doing linear interpolation of values in between each island. Hence bilinear interpolation, because we have two axes $x$ and $y$. Without loss of generalization, this applies to any upscaling which is a factor or 2.
 
 \item % (viii)
-(code). TODO include image
+(code).
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=1.0\textwidth]{img/image_detections.png} \\
+	Bounding boxes with threshold = 0.82. \\
+	This is the highest threshold at 2 significant figures that manages to match the second-smallest image. \\
+	\hline
+\end{tabular}
+
+\pagebreak
 
 \item % (xi)
-TODO
+The template only matches the original image, which is the second stop sign; it is not robust to intra-class variation.
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=1.0\textwidth]{img/stop2_detection.png} \\
+	Bounding boxes at default threshold in pset. \\
+	\hline
+\end{tabular}
 
 \end{enumerate}
 
