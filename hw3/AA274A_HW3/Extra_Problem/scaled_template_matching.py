@@ -83,9 +83,8 @@ def template_match(template, image,
 
     I = np.zeros((m, n, c))
     I[:m_ori, :n_ori] = I_ori # pad lower-right with zeros
-
     I_base = I
-    print(I_base.shape[0], I_base.shape[1])
+    # print(I_base.shape[0], I_base.shape[1])
 
     # Attempt match at original scale
     bboxes = match(F, I_base, threshold=detection_threshold)
@@ -96,9 +95,9 @@ def template_match(template, image,
     for i in range(num_upscales):
         k = i+1
         m, n, _ = I.shape
-        # I = cv2.pyrUp(I, dstsize=(n*2, m*2))
         I = cv2.pyrUp(I)
-        print(I.shape[0], I.shape[1])
+        # I = cv2.pyrUp(I, dstsize=(n*2, m*2))
+        # print(I.shape[0], I.shape[1])
         bboxes = match(F, I_base, threshold=detection_threshold)
         matches.extend(bboxes)
     
@@ -107,13 +106,10 @@ def template_match(template, image,
     for i in range(num_downscales):
         k = i+1
         m, n, _ = I.shape
-        # I = cv2.pyrDown(I, dstsize=(n/2, m/2))
         I = cv2.pyrDown(I)
-        print(I.shape[0], I.shape[1])
+        # I = cv2.pyrDown(I, dstsize=(n/2, m/2))
+        # print(I.shape[0], I.shape[1])
         bboxes = match(F, I_base, threshold=detection_threshold)
-        # print(bboxes)
-        for bbox in bboxes:
-            bbox = bbox * (2.0**k)
         matches.extend(bboxes)
 
     return matches
