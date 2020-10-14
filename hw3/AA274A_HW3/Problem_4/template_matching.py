@@ -38,9 +38,13 @@ def template_match(template, image, threshold=0.999):
             Ivec = I_padded[u:u+f, v:v+g, :] # (f, g, c)-shaped slice from padded image
             Ivec = np.reshape(Ivec, cfg, order='C')
             Inorm = np.linalg.norm(Ivec)
-            sim = np.dot(Fvec, Ivec) / Fnorm / Inorm
+            # conditional to silence runtime warning if one of the norms is zero
+            if np.all(Fnorm == 0) or np.all(Inorm == 0):
+                sim = 0
+            else:
+                sim = np.dot(Fvec, Ivec) / Fnorm / Inorm
             if sim > t:
-                bboxes.append((u, v, f, g))
+                bboxes.append((u-px, v-py, f, g))
 
     return bboxes
     ########## Code ends here ##########

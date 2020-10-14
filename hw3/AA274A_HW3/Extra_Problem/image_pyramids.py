@@ -14,7 +14,9 @@ def half_downscale(image):
         downscaled_image: A half-downscaled version of image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    I = image
+    I = I[::2, ::2, :] # Grab every other row and col by setting stride to 2
+    return I
     ########## Code ends here ##########
 
 
@@ -27,7 +29,10 @@ def blur_half_downscale(image):
         downscaled_image: A half-downscaled version of image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    I = image
+    I = cv2.GaussianBlur(I, ksize=(5,5), sigmaX=0.7)
+    I = I[::2, ::2, :]
+    return I
     ########## Code ends here ##########
 
 
@@ -40,7 +45,10 @@ def two_upscale(image):
         upscaled_image: A 2x-upscaled version of image.
     """
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+    I = image
+    I = np.repeat(I, 2, axis=0)
+    I = np.repeat(I, 2, axis=1)
+    return I
     ########## Code ends here ##########
 
 
@@ -59,8 +67,20 @@ def bilinterp_upscale(image, scale):
     f = np.expand_dims(f, axis=0) # Making it (1, (2*scale)-1)-shaped
     filt = f.T * f
 
+    print(filt)
+    return
+
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+
+    s = int(scale) # expects scale to be a power of 2.
+    assert(s % 2 == 0)
+
+    I, F = image, filt
+    G = np.zeros((m*s, n*s, c))
+    G[::s, ::s, :] = I
+    G = cv2.filter2D(G, -1, F)
+    return G
+
     ########## Code ends here ##########
 
 
@@ -78,7 +98,59 @@ def main():
     # matches exactly what's in the data array you pass in.
     
     ########## Code starts here ##########
-    raise NotImplementedError("Implement me!")
+
+    _valid_cases = [
+        'bilinear_upscale',
+        'upscale',
+        'blurred_halfscale',
+        'halfscale'
+    ]
+
+    case = 'bilinear_upscale'
+
+    img = None
+    func = None
+    file_name = None
+
+    if case == 'bilinear_upscale':
+        img = favicon
+        func = bilinterp_upscale
+        file_name = 'outputs/favicon_bilinear_8x.png'
+        img = func(img, scale=2)
+
+    elif case == 'upscale':
+        img = favicon
+        func = two_upscale
+        file_name = 'outputs/favicon_upscale_8x.png'
+        img = func(img)
+        img = func(img)
+        img = func(img)
+
+    elif case == 'blur_halfscale':
+        img = test_card
+        func = blur_half_downscale
+        file_name = 'outputs/test_card_blur_eighthscale.png'
+        img = func(img)
+        img = func(img)
+        img = func(img)
+
+    elif case == 'halfscale':
+        img = test_card
+        func = half_downscale
+        file_name = 'outputs/test_card_eighthscale.png'
+        img = func(img)
+        img = func(img)
+        img = func(img)
+
+    else:
+        raise ValueError("Case '{}' not understood.".format(case))
+
+    fig, ax = plt.subplots()
+    img = ax.imshow(img, interpolation='none')
+    fig.savefig(file_name, bbox_inches='tight')
+    plt.show()
+    plt.close(fig)
+
     ########## Code ends here ##########
 
 

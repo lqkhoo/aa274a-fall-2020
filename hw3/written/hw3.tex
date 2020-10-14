@@ -234,25 +234,27 @@ TODO
 (code)
 
 \item % (ii)
-TODO
+We have lost high-frequency information as a by-product of our sampling process, specifically the signal or gradient between each adjacent pixel.
+TODO include image
 
 \item % (iii)
 (code)
 
 \item % (iv)
-TODO
+The Gaussian blur 'expanded' high frequency information along the x and y axes, so we preserve some component of those signals when sampling the image.
+TODO include image
 
 \item % (v)
 (code)
 
 \item % (vi)
-TODO
+We have simply expanded each pixel by 8x along each dimension. To look at it another way, we have simply created 8x8 identical subpixels within each original pixel.
 
 \item % (vii)
-(code)
+(code). I'm going to explain this in terms of a 2x upscaling. First of all, from the way we expanded the image, and how OpenCV zero-pads the boundaries, we have 'islands' of pixels spread apart by exactly the same distance which we want to expand the image by. Also, normalization works out as a sanity check: The kernel for 2x2 upscaling sums to 4. 'Striding' or expanding the image as described for a 2x2 upscale effectively divides each region by 4. When viewed along these 'islands' of original pixel values, the tent function is literally simply doing linear interpolation of values in between each island. Hence bilinear interpolation since we have two axes $x$ and $y$. We can see that without loss of generalization, this applies without loss of generalization to any upscaling which is a factor or 2.
 
 \item % (viii)
-(code)
+(code). TODO include image
 
 \item % (xi)
 TODO
