@@ -49,6 +49,11 @@ def two_upscale(image):
     I = np.repeat(I, 2, axis=0)
     I = np.repeat(I, 2, axis=1)
     return I
+
+    # Alternatively, probably less efficiently
+    ## I = np.kron(image, np.ones((2,2)))
+    ## return I
+
     ########## Code ends here ##########
 
 

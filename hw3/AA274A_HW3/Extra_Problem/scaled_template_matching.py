@@ -68,9 +68,6 @@ def template_match(template, image,
     ########## Code starts here ##########
     matches = []
 
-    upscaled = []
-    downscaled = []
-
     F = template
     f, g, c = F.shape
 
@@ -92,10 +89,9 @@ def template_match(template, image,
     
     # Upscale
     I = I_base
-    for i in range(num_upscales):
-        k = i+1
-        m, n, _ = I.shape
+    for _ in range(num_upscales):
         I = cv2.pyrUp(I)
+        # m, n, _ = I.shape
         # I = cv2.pyrUp(I, dstsize=(n*2, m*2))
         # print(I.shape[0], I.shape[1])
         bboxes = match(F, I_base, threshold=detection_threshold)
@@ -103,10 +99,9 @@ def template_match(template, image,
     
     # Downscale
     I = I_base
-    for i in range(num_downscales):
-        k = i+1
-        m, n, _ = I.shape
+    for _ in range(num_downscales):
         I = cv2.pyrDown(I)
+        # m, n, _ = I.shape
         # I = cv2.pyrDown(I, dstsize=(n/2, m/2))
         # print(I.shape[0], I.shape[1])
         bboxes = match(F, I_base, threshold=detection_threshold)

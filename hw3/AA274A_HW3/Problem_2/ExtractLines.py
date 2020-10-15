@@ -94,6 +94,35 @@ def ExtractLines(RangeData, params):
 
     return alpha, r, segend, pointIdx
 
+def SplitLinesInner(theta, rho, startIdx, endIdx, alpha, r, idx, params):
+    """
+    Helper to SplitLinesRecursive
+    """
+
+    # Current subset
+    a, b = startIdx, endIdx
+    theta_sub = theta[a:b]
+    rho_sub   = rho[a:b]
+
+    # Fit a line parameterized by alpha and r to current subset.
+    alpha_sub, r_sub = FitLine(theta_sub, rho_sub)
+    if b - a < params['MIN_POINTS_PER_SEGMENT']: # Don't split anymore if we're already at minimum.
+        alpha.append(alpha_sub)
+        r.append(r_sub)
+        idx.append((a,b))
+        return
+
+    # Otherwise determine the point to split.
+    s = FindSplit(theta_sub, rho_sub, alpha_sub, r_sub, params)
+    if s == -1: # No split
+        alpha.append(alpha_sub)
+        r.append(r_sub)
+        idx.append((a,b))
+        return
+    else:
+        SplitLinesInner(theta, rho, a, a+s, alpha, r, idx, params)
+        SplitLinesInner(theta, rho, a+s, b, alpha, r, idx, params)
+    
 
 def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     '''
@@ -116,6 +145,10 @@ def SplitLinesRecursive(theta, rho, startIdx, endIdx, params):
     HINT: Call FindSplit() to find an index to split at.
     '''
     ########## Code starts here ##########
+
+    alpha, r, idx = [], [], [] # lists because we're going to be appending things.
+    SplitLinesInner(theta, rho, startIdx, endIdx, alpha, r, idx, params)
+    alpha, r, idx = np.array(alpha), np.array(r), np.array(idx)
 
     ########## Code ends here ##########
     return alpha, r, idx
@@ -141,6 +174,25 @@ def FindSplit(theta, rho, alpha, r, params):
     '''
     ########## Code starts here ##########
 
+    D_THRESH = params['LINE_POINT_DIST_THRESHOLD']
+    MIN_SEG  = params['MIN_POINTS_PER_SEGMENT']
+
+    # If line is shorter than can be broken into two segments,
+    # we'll never be able to find a split. We need this check, otherwise
+    # we'll set the the whole of d to -1 and argmax will return 0, which is nonsense.
+    n = theta.shape[0]
+    if n < 2 * MIN_SEG:
+        splitIdx = -1
+    else:
+        d = np.abs(rho * np.cos(theta - alpha) - r)
+        # Ignore first MIN_SEG points at either end, because splitting there
+        # violates the shortest segment criterion.
+        d[-(MIN_SEG-1):] = -1   # Subtract 1 from end; e.g. if line is exactly 2*MIN_SEG,
+                                # [:MIN_SEG], [MIN_SEG:] is a candidate split
+        d[:MIN_SEG] = -1
+        dmax_idx = np.argmax(d) # Tiebreaker is first element from the left.
+        splitIdx = dmax_idx if d[dmax_idx] > D_THRESH else -1
+
     ########## Code ends here ##########
     return splitIdx
 
@@ -157,6 +209,23 @@ def FitLine(theta, rho):
         r: 'r' of best fit for range data (1 number) (m).
     '''
     ########## Code starts here ##########
+
+    # We just follow eq (3) in pset.
+    n = theta.shape[0] # num of points to fit
+
+    # Handle the doubled sums first.
+    # These variables only make sense within the doubled sum.
+    theta_i, theta_j = np.repeat(theta, n), np.tile(theta, n)
+    rho_i  , rho_j   = np.repeat(rho, n)  , np.tile(rho, n)
+
+    t1 = np.sum(rho_i * rho_j * np.cos(theta_i) * np.sin(theta_j)) * 2.0 / n
+    t2 = np.sum(rho_i * rho_j * np.cos(theta_i + theta_j)) / n
+
+    num   = np.sum(rho * rho * np.sin(2 * theta)) - t1
+    denom = np.sum(rho * rho * np.cos(2 * theta)) - t2
+
+    alpha = 0.5 * np.arctan2(num, denom) + np.pi / 2.0
+    r = np.sum(rho * np.cos(theta - alpha)) / n
 
     ########## Code ends here ##########
     return alpha, r
@@ -184,6 +253,34 @@ def MergeColinearNeigbors(theta, rho, alpha, r, pointIdx, params):
     '''
     ########## Code starts here ##########
 
+    # assert(alpha.shape[0] == r.shape[0] and r.shape[0] == pointIdx.shape[0])
+    n = alpha.shape[0]
+    
+    # Since we have a few points only we'll just append to lists without preallocation.
+    alphaOut, rOut, pointIdxOut = [], [], []
+
+    for i in range(n):
+
+        if i == 0:
+            alphaOut.append(alpha[0])
+            rOut.append(r[0])
+            pointIdxOut.append(pointIdx[0])
+            continue
+
+        # Consider two segs together. We get the:
+        a = min(pointIdxOut[-1][0], pointIdx[i][0]) # min of the start indices
+        b = max(pointIdxOut[-1][1], pointIdx[i][1]) # max of the end indices
+        theta_seg, rho_seg = theta[a:b], rho[a:b]
+        alpha_seg, r_seg = FitLine(theta_seg, rho_seg)
+        splitIdx = FindSplit(theta_seg, rho_seg, alpha_seg, r_seg, params)
+
+        if splitIdx == -1:
+            pass
+        else:
+            alphaOut.append(alpha[i])
+            rOut.append(r[i])
+            pointIdxOut.append(pointIdx[i])
+
     ########## Code ends here ##########
     return alphaOut, rOut, pointIdxOut
 
@@ -208,7 +305,7 @@ def main():
     # parameters for line extraction (mess with these!)
     MIN_SEG_LENGTH = 0.05  # minimum length of each line segment (m)
     LINE_POINT_DIST_THRESHOLD = 0.02  # max distance of pt from line to split
-    MIN_POINTS_PER_SEGMENT = 4  # minimum number of points per line segment
+    MIN_POINTS_PER_SEGMENT = 2  # minimum number of points per line segment
     MAX_P2P_DIST = 1.0  # max distance between two adjent pts within a segment
 
     # Data files are formated as 'rangeData_<x_r>_<y_r>_N_pts.csv
@@ -216,9 +313,9 @@ def main():
     #       y_r is the robot's y position
     #       N_pts is the number of beams (e.g. 180 -> beams are 2deg apart)
 
-    filename = 'rangeData_5_5_180.csv'
+    # filename = 'rangeData_5_5_180.csv'
     # filename = 'rangeData_4_9_360.csv'
-    # filename = 'rangeData_7_2_90.csv'
+    filename = 'rangeData_7_2_90.csv'
 
     # Import Range Data
     RangeData = ImportRangeData(filename)
@@ -235,6 +332,7 @@ def main():
     ax = PlotRays(RangeData, ax)
     ax = PlotLines(segend, ax)
 
+    # plt.savefig('outputs/{}.{}'.format(filename, 'png'))
     plt.show(ax)
 
 ############################################################

@@ -45,13 +45,13 @@ def corr(F, I):
             G[u,v] = np.dot(Fvec, Ivec)
     return G
 
-
+    """
     # Implementation with array indexing
     # Runtimes 0.13, 7.55, 0.12, 0.34
     # The required mem footprint will probably fail the autograder
-    """
-    cfg = c*f*g
-    Fvec = np.reshape(F, cfg, order='C')
+    # since we are pre-calculating all the indices.
+    
+    Fvec = np.reshape(F, c*f*g, order='C')
     
     # Generate indices
     x_starts = np.arange(0, m)   # All possible start positions
@@ -60,6 +60,9 @@ def corr(F, I):
     x_idxs = np.repeat(x_idxs, g, axis=1) # This accounts for height of filter
     x_idxs = np.repeat(x_idxs, n, axis=0) # Repeat y times
     # Shape should be (m*n, f*g). For each point in mxn image, we need to select f*g coords.
+
+    # The last two repeats are equivalent to taking the Kronecker product, but repeats take less compute time.
+    # x_idxs = np.kron(x_idxs, np.ones((n,g), dtype=np.int)) 
 
     y_starts = np.arange(0, n)   # All possible start positions
     y_ends   = np.arange(g, g+n) # All possible end positions

@@ -546,7 +546,7 @@ class CameraCalibrator:
         v_meas = []
         for chessboards in self.c.good_corners:
             u_meas.append(chessboards[0][:, 0][:, 0])
-            # v_meas.append(chessboards[0][:, 0][:, 1]) # TODO this keeps Y's direction.
+            # v_meas.append(chessboards[0][:, 0][:, 1]) # This keeps Y's original direction instead.
             v_meas.append(self.h_pixels - chessboards[0][:, 0][:, 1])   # Flip Y-axis to traditional direction
 
         return u_meas, v_meas   # Lists of arrays (one per chessboard)
