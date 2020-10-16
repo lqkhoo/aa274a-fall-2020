@@ -212,7 +212,11 @@ However, unlike a neural net implementation that learns and summarizes individua
 \section*{Problem 5: Stop Sign Detection and FSM in ROS}
 \begin{enumerate}[label=(\roman*)]
 \item % (i)
-TODO
+`supervisor.py` publishes two messages on the following prefixes:
+\begin{enumerate}
+	\item `/cmd_pose`, type `geometry_msgs.msg.Pose2D`
+	\item `/cmd_vel`, type `geometry_msgs.msg.Twist`
+\end{enumerate}
 
 \item % (ii)
 (code)
