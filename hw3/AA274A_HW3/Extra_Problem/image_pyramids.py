@@ -74,8 +74,7 @@ def bilinterp_upscale(image, scale):
 
     ########## Code starts here ##########
 
-    s = int(scale) # expects scale to be a power of 2.
-    assert(s % 2 == 0)
+    s = int(scale)
 
     I, F = image, filt
     G = np.zeros((m*s-(s-1), n*s-(s-1), c)) # We don't want the last group of zeros
