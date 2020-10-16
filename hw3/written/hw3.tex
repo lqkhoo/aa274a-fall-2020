@@ -65,17 +65,44 @@
 
 \end{enumerate}
 
-
 \section*{Problem 2: Line Extraction}
 \begin{enumerate}[label=(\roman*)]
 \item % (i)
 (code)
 
 \item % (ii)
-TODO
 
+With parameters
+\begin{enumerate}
+	\item MIN\_SEG\_LENGTH = 0.05
+	\item LINE\_POINT\_DIST\_THRESHOLD = 0.02
+	\item MIN\_POINTS\_PER\_SEGMENT = 2
+	\item MAX\_P2P\_DIST = 1
 \end{enumerate}
 
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.80\textwidth]{img/rangeData_4_9_360.png} \\
+	\hline
+	Split-and-merge on \texttt{rangeData\_4\_9\_360} \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.80\textwidth]{img/rangeData_5_5_180.png} \\
+	\hline
+	Split-and-merge on \texttt{rangeData\_5\_5\_180} \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.80\textwidth]{img/rangeData_7_2_90.png} \\
+	\hline
+	Split-and-merge on \texttt{rangeData\_7\_2\_90} \\
+\end{tabular}
+
+\end{enumerate}
 
 \section*{Problem 3: Linear Filtering}
 \begin{enumerate}[label=(\roman*)]
@@ -180,13 +207,14 @@ Convolution with a flipped filter in all its dimensions would produce the same o
 
 In other words,
 \begin{equation}
-G(i,j) = \sum_{u=1}^k\sum_{v=1}^l F(u,v)\cdot I(i-u, j-v)
-= \sum_{u=1}^k\sum_{v=1}^l F(k-u, l-v) \cdot I(i+u, j+v)
+\begin{aligned}
+G(i,j) &= \sum_{u=1}^k\sum_{v=1}^l F(u,v)\cdot I(i-u, j-v) \\
+&= \sum_{u=1}^k\sum_{v=1}^l F(k-u, l-v) \cdot I(i+u, j+v)
+\end{aligned}
 \end{equation}
 
 
 \end{enumerate}
-
 
 \section*{Problem 4: Template Matching}
 \begin{enumerate}[label=(\roman*)]
@@ -212,32 +240,42 @@ However, unlike a neural net implementation that learns and summarizes individua
 \section*{Problem 5: Stop Sign Detection and FSM in ROS}
 \begin{enumerate}[label=(\roman*)]
 \item % (i)
-`supervisor.py` publishes two messages on the following prefixes:
+\texttt{supervisor.py} publishes two messages on the following prefixes:
 \begin{enumerate}
-	\item `/cmd_pose`, type `geometry_msgs.msg.Pose2D`
-	\item `/cmd_vel`, type `geometry_msgs.msg.Twist`
+	\item \texttt{/cmd\_pose}, type \texttt{geometry\_msgs.msg.Pose2D}
+	\item \texttt{/cmd\_vel}, type \texttt{geometry\_msgs.msg.Twist}
 \end{enumerate}
 
 \item % (ii)
 (code)
 
 \item % (iii)
-TODO
+(code)
 
 \item % (iv)
-TODO
+(code)
 
 \item % (v)
 null
 
 \item % (vi)
-TODO
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/state_machine.png} \\
+	\hline
+	FSM of \texttt{supervisor.py} \\
+\end{tabular}
 
 \item % (vii)
 (code)
 
 \item % (viii)
-TODO
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/vel_profile.png} \\
+	\hline
+	Velocity profile of Turtlebot model 'burger' under state machine policy. \\
+\end{tabular}
 	
 \end{enumerate}
 
@@ -296,7 +334,7 @@ We have simply expanded each pixel by 8x along each dimension. To look at it ano
 
 Comparing the images: the intensity differences between the pixel regions are less abrupt.
 
-Informal explanation: I'm going to explain this in terms of a 2x upscaling. From the way we've expanded the image, and how OpenCV zero-pads the boundaries, we have 'islands' of pixels spread apart by exactly the same distance which we want to expand the image by. Also, normalization works out as a sanity check: The kernel for 2x2 upscaling sums to 4. 'Striding' or expanding the image as described for a 2x2 upscale effectively divides each region by 4. When viewed along these 'islands' of original pixel values, the tent function is doing linear interpolation of values in between each island. Hence bilinear interpolation, because we have two axes $x$ and $y$. Without loss of generalization, this applies to any upscaling which is a factor or 2.
+Informal explanation: I'm going to explain this in terms of a 2x upscaling. From the way we've expanded the image, and how OpenCV zero-pads the boundaries, we have 'islands' of pixels spread apart by exactly the same distance which we want to expand the image by. Also, normalization works out as a sanity check: The kernel for 2x2 upscaling sums to 4. 'Striding' or expanding the image as described for a 2x2 upscale effectively divides each region by 4. When viewed along these 'islands' of original pixel values, the tent function is doing discrete linear interpolation of values in between each island. Hence bilinear interpolation, because we have two axes $x$ and $y$. Without loss of generalization, this applies to any upscaling which is a factor or 2.
 
 \item % (viii)
 (code).
@@ -306,6 +344,7 @@ Informal explanation: I'm going to explain this in terms of a 2x upscaling. From
 	\includegraphics[width=1.0\textwidth]{img/image_detections.png} \\
 	Bounding boxes with threshold = 0.82. \\
 	This is the highest threshold at 2 significant figures that manages to match the second-smallest image. \\
+	The precision / recall tradeoffs are severe. \\
 	\hline
 \end{tabular}
 
