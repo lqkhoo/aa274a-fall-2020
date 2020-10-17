@@ -178,6 +178,33 @@ G(i,j) =
 
 \item % (iii)
 (code)
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/corr_img_filt0.png} \\
+	\hline
+	Correlation with \texttt{filt0} \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/corr_img_filt1.png} \\
+	\hline
+	Correlation with \texttt{filt1} \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/corr_img_filt2.png} \\
+	\hline
+	Correlation with \texttt{filt2} \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/corr_img_filt3.png} \\
+	\hline
+	Correlation with \texttt{filt3} \\
+\end{tabular}
 
 \item % (iv)
 Naive implementation as above using a loop: Runtimes are 0.79, 1.36, 0.77, 0.80 seconds.
@@ -190,9 +217,9 @@ Vectorized implementation batching all image pixels: Runtimes are 0.13, 7.55, 0.
 \item To answer the second hint, the total number of addmul operations are $u \cdot v \cdot w \cdot h$ as we are applying a filter with a receptive field of $u$ by $v$ over a single-channel input of size $w$ by $h$. If the filter could be expressed as an outer product, the total cost would be $(u+v) \cdot w \cdot h$.
 
 \item We could implement Winograd's minimal filtering algorithm that pre-computes intermediate values that depend only on kernel weights with the motivation of saving redundant computation.
-\end{enumerate}
 
 \item For large inputs, instead of direct convolution, we can first transform our input and kernel into the frequency domain via FFT (with suitable windowing), multiply the two signals, and then translate back into our original spatial domains via inverse DFT. This approach is an approximation, the accuracy of which depends on the Fourier window, but for large inputs, the performance gains are significant.
+\end{enumerate}
 
 \item % (v)
 We use the result that any $m\times n$ matrix of rank 1 could be expressed as a vector outer product $uv^\mathsf{T}$. This is because the column rank of any vector $u$ has to be equal to 1. To answer the question, if we know that a matrix is rank 1 and we simply wish to recover $u$ and $v^\mathsf{T}$, these correspond to the orthogonal matrices after performing SVD on the original matrix. Alternatively, $u$ could be any of its columns and $v$ is the single nonzero row left over after performing Gaussian elimination, up to a constant factor $k$.
@@ -355,8 +382,36 @@ The template only matches the original image, which is the second stop sign; it 
 
 \begin{tabular}[t]{l}
 	\hline \\
-	\includegraphics[width=1.0\textwidth]{img/stop2_detection.png} \\
-	Bounding boxes at default threshold in pset. \\
+	\includegraphics[width=0.7\textwidth]{img/stop1_detection.png} \\
+	No bounding boxes at default threshold on \texttt{stop1}. \\
+	\hline
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/stop2_detection.png} \\
+	Bounding boxes at default threshold on \texttt{stop2}. \\
+	\hline
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/stop3_detection.png} \\
+	No bounding boxes at default threshold on \texttt{stop3}. \\
+	\hline
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/stop4_detection.png} \\
+	No bounding boxes at default threshold on \texttt{stop4}. \\
+	\hline
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.7\textwidth]{img/stop5_detection.png} \\
+	No bounding boxes at default threshold on \texttt{stop5}. \\
 	\hline
 \end{tabular}
 
