@@ -2,8 +2,30 @@
 
 import numpy as np
 import time
-import cv2
+# import cv2
 import matplotlib.pyplot as plt
+
+def mono_corr(F, I):
+    """
+    For doing Problem 3(a)
+    """
+    f, g = F.shape
+    m, n = I.shape
+
+    px = int(np.floor(f / 2))
+    py = int(np.floor(g / 2))
+
+    I_padded = np.pad(I, ((px, px), (py, py)), 'constant') # Don't pad channels
+
+    fg = f*g # length of our vectors
+    Fvec = np.reshape(F, fg, order='C')
+    G = np.zeros((m, n))
+    for u in range(m): # rows
+        for v in range(n): # cols
+            Ivec = I_padded[u:u+f, v:v+g] # (f, g, c)-shaped slice from padded image
+            Ivec = np.reshape(Ivec, fg, order='C')
+            G[u,v] = np.dot(Fvec, Ivec)
+    return G
 
 
 def corr(F, I):
@@ -166,7 +188,7 @@ def main():
         start = time.time()
         corr_img = corr(filt, test_card)
         stop = time.time()
-        print 'Correlation function runtime:', stop - start, 's'
+        print('Correlation function runtime:', stop - start, 's')
         show_save_corr_img("corr_img_filt%d.png" % idx, corr_img, filt)
 
 

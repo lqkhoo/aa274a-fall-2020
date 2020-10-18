@@ -107,11 +107,35 @@ With parameters
 \section*{Problem 3: Linear Filtering}
 \begin{enumerate}[label=(\roman*)]
 \item % (i)
+We'll just show the workings for the elements at $(1,1)$. Where
+
+\begin{equation}
+I = \begin{bmatrix}
+1 & 2 & 3 \\
+4 & 5 & 6 \\
+7 & 8 & 9
+\end{bmatrix}
+\end{equation}
 
 \begin{enumerate}
 	\item
+	
 	\begin{equation}
-	F = \begin{bmatrix}
+	F =
+	\begin{bmatrix}
+	0 & 0 & 0 \\
+	0 & 1 & 0 \\
+	0 & 0 & 0
+	\end{bmatrix}
+	\quad , \quad
+	F \otimes I(1,1) =
+	\begin{bmatrix}
+	0 & 0 & 0 \\
+	0 & 5 & 0 \\
+	0 & 0 & 0
+	\end{bmatrix}
+	\quad , \quad
+	F \otimes I = \begin{bmatrix}
 	1 & 2 & 3 \\
 	4 & 5 & 6 \\
 	7 & 8 & 9
@@ -120,7 +144,21 @@ With parameters
 	
 	\item
 	\begin{equation}
-	F = \begin{bmatrix}
+	F =
+	\begin{bmatrix}
+	0 & 0 & 0 \\
+	0 & 0 & 1 \\
+	0 & 0 & 0
+	\end{bmatrix}
+	\quad , \quad
+	F \otimes I(1,1) =
+	\begin{bmatrix}
+	0 & 0 & 0 \\
+	0 & 6 & 0 \\
+	0 & 0 & 0
+	\end{bmatrix}
+	\quad , \quad
+	F \otimes I = \begin{bmatrix}
 	2 & 3 & 0 \\
 	5 & 6 & 0 \\
 	8 & 9 & 0
@@ -130,17 +168,48 @@ With parameters
 	\item
 	This kernel is doing discrete difference (differentiation) of the image along the horizontal axis. It could be used to perform edge detection tasks.
 	\begin{equation}
-	F = \begin{bmatrix}
-	2 & 2 & -2 \\
-	5 & 2 & -5 \\
-	8 & 2 & -8
+	F =
+	\begin{bmatrix}
+	-1 & 0 & 1 \\
+	-1 & 0 & 1 \\
+	-1 & 0 & 1
+	\end{bmatrix}
+	\quad , \quad
+	F \otimes I(1,1) =
+	\begin{bmatrix}
+	0 & 0 & 0 \\
+	0 & 6 & 0 \\
+	0 & 0 & 0
+	\end{bmatrix}
+	\quad , \quad
+	F \otimes I = \begin{bmatrix}
+	7 & 4 & -7 \\
+	15 & 6 & -15 \\
+	13 & 4 & -13
 	\end{bmatrix}
 	\end{equation}
 	
 	\item
 	This is an isotropic, normalized Gaussian kernel performing blurring on the image. It could be used to filter out high frequency information on either axis.
 	\begin{equation}
-	F = \frac{1}{16}\begin{bmatrix}
+	F =
+	\frac{1}{16}
+	\begin{bmatrix}
+	1 & 2 & 1 \\
+	2 & 4 & 2 \\
+	1 & 2 & 1
+	\end{bmatrix}
+	\quad , \quad
+	F \otimes I(1,1) =
+	\frac{1}{16}
+	\begin{bmatrix}
+	0 & 0 & 0 \\
+	0 & 80 & 0 \\
+	0 & 0 & 0
+	\end{bmatrix}
+	\quad , \quad
+	F \otimes I = \frac{1}{16}
+	\begin{bmatrix}
 	21 & 36 & 33 \\
 	52 & 80 & 68 \\
 	57 & 84 & 69
