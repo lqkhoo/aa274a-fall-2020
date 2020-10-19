@@ -9,7 +9,11 @@ import matplotlib.pyplot as plt
 def match(template, image, scale, threshold):
     """
     """
+<<<<<<< HEAD
     bboxes = set() # Just as an extra step make sure the boxes are unique.
+=======
+    bboxes = []
+>>>>>>> d11a84634d5e3eb580d36f893a7c7b1ec41396fd
     I, F = image.astype(np.uint8), template.astype(np.uint8)
     h, w, _ = F.shape
 
@@ -21,7 +25,11 @@ def match(template, image, scale, threshold):
     if n != 0:
         B = (np.vstack((x, y, h, w)).T  * scale).astype(np.int)
         for i in range(n):
+<<<<<<< HEAD
             bboxes.add(tuple(B[i])) # Items need to be hashable.
+=======
+            bboxes.append(tuple(B[i]))
+>>>>>>> d11a84634d5e3eb580d36f893a7c7b1ec41396fd
     return bboxes
 
 
@@ -63,6 +71,9 @@ def template_match(template, image,
         I = cv2.pyrDown(I)
         bboxes = match(F, I, scale=(2**(k+1)), threshold=detection_threshold)
         matches.extend(bboxes)
+
+    # Just as an extra step make sure the boxes are unique.
+    matches = set(matches)
 
     return matches
     ########## Code ends here ##########
