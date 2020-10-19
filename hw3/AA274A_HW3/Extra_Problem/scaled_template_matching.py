@@ -6,35 +6,23 @@ import matplotlib.pyplot as plt
 
 
 # Instead of returning tuples we return np.array
-def match(template, image, threshold):
+def match(template, image, scale, threshold):
     """
-    Input
-        template: A (k, ell, c)-shaped ndarray containing the k x ell template (with c channels).
-        image: An (m, n, c)-shaped ndarray containing the m x n image (with c channels).
-        threshold: Minimum normalized cross-correlation value to be considered a match.
-
-    Returns
-        matches: A list of (top-left y, top-left x, bounding box height, bounding box width) tuples for each match's bounding box.
     """
-    ########## Code starts here ##########
-    bboxes = []
+    bboxes = set() # Just as an extra step make sure the boxes are unique.
     I, F = image.astype(np.uint8), template.astype(np.uint8)
-    match_method = cv2.TM_CCOEFF_NORMED
-    f, g, _ = I.shape
     h, w, _ = F.shape
 
-    sim = cv2.matchTemplate(I, F, match_method)
+    sim = cv2.matchTemplate(I, F, method=cv2.TM_CCORR_NORMED)
     x, y = np.nonzero(sim > threshold)
     n = x.shape[0] # number of boxes
     h = np.ones(n) * h
     w = np.ones(n) * w
     if n != 0:
-        B = np.vstack((x, y, h, w)).astype(np.int).T
+        B = (np.vstack((x, y, h, w)).T  * scale).astype(np.int)
         for i in range(n):
-            bboxes.append(B[i])
-
+            bboxes.add(tuple(B[i])) # Items need to be hashable.
     return bboxes
-    ########## Code ends here ##########
 
 
 def template_match(template, image,
@@ -52,49 +40,28 @@ def template_match(template, image,
         matches: A list of (top-left y, top-left x, bounding box height, bounding box width) tuples for each match's bounding box.
     """
     ########## Code starts here ##########
+
     matches = []
-
     F = template
-    f, g, c = F.shape
-
-    I_ori = image
-    m_ori, n_ori, _ = I_ori.shape
-
-    # Seek closest power of 2 greater than dimensions
-    m = 1 << (m_ori-1).bit_length()
-    n = 1 << (n_ori-1).bit_length()
-
-    I = np.zeros((m, n, c))
-    I[:m_ori, :n_ori] = I_ori # pad lower-right with zeros
-    I_base = I
-    # print(I_base.shape[0], I_base.shape[1])
+    I_base = image
 
     # Attempt match at original scale
-    bboxes = match(F, I_base, threshold=detection_threshold)
+    # print(I_base.shape[0], I_base.shape[1])
+    bboxes = match(F, I_base, scale=1.0, threshold=detection_threshold)
     matches.extend(bboxes)
     
     # Upscale
     I = I_base
     for k in range(num_upscales):
         I = cv2.pyrUp(I)
-        # m, n, _ = I.shape
-        # I = cv2.pyrUp(I, dstsize=(n*2, m*2))
-        # print(I.shape[0], I.shape[1])
-        bboxes = match(F, I, threshold=detection_threshold)
-        for i in range(len(bboxes)):
-            bboxes[i] = bboxes[i] / (2**(k+1))
+        bboxes = match(F, I, scale=1.0/(2**(k+1)), threshold=detection_threshold)
         matches.extend(bboxes)
     
     # Downscale
     I = I_base
     for k in range(num_downscales):
         I = cv2.pyrDown(I)
-        # m, n, _ = I.shape
-        # I = cv2.pyrDown(I, dstsize=(n/2, m/2))
-        # print(I.shape[0], I.shape[1])
-        bboxes = match(F, I, threshold=detection_threshold)
-        for i in range(len(bboxes)):
-            bboxes[i] = bboxes[i] * (2**(k+1))
+        bboxes = match(F, I, scale=(2**(k+1)), threshold=detection_threshold)
         matches.extend(bboxes)
 
     return matches
@@ -121,7 +88,14 @@ def main():
     template = cv2.imread('messi_face.jpg')
     image = cv2.imread('messipyr.jpg')
 
-    matches = template_match(template, image, detection_threshold=0.7)
+    matches = template_match(template, image, detection_threshold=0.93)
+
+    """
+    from pprint import pprint
+    tmp = sorted(list(set(matches)))
+    print(len(tmp))
+    pprint(tmp)
+    """
     create_and_save_detection_image(image, matches)
 
     template = cv2.imread('stop_signs/stop_template.jpg').astype(np.float32)
@@ -129,7 +103,6 @@ def main():
         image = cv2.imread('stop_signs/stop%d.jpg' % i).astype(np.float32)
         matches = template_match(template, image, detection_threshold=0.87)
         create_and_save_detection_image(image, matches, 'stop_signs/stop%d_detection.png' % i)
-    
 
 if __name__ == '__main__':
     main()
