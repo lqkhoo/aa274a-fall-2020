@@ -77,7 +77,7 @@ def bilinterp_upscale(image, scale):
     s = int(scale)
 
     I, F = image, filt
-    G = np.zeros((m*s-(s-1), n*s-(s-1), c)) # We don't want the last group of zeros
+    G = np.zeros((m*s-(s-1), n*s-(s-1), c)) # -(s-1) because we don't want the last group of zeros
     G[::s, ::s, :] = I
     G = cv2.filter2D(G, -1, F)
     return G
