@@ -7,3 +7,6 @@
 *.synctex.gz
 *.zip
 *.pkl
+
+*CMakeLists.txt
+*package.xml
