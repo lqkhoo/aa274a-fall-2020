@@ -89,22 +89,26 @@ def template_match(template, image,
     
     # Upscale
     I = I_base
-    for _ in range(num_upscales):
+    for k in range(num_upscales):
         I = cv2.pyrUp(I)
         # m, n, _ = I.shape
         # I = cv2.pyrUp(I, dstsize=(n*2, m*2))
-        # print(I.shape[0], I.shape[1])
-        bboxes = match(F, I_base, threshold=detection_threshold)
+        print(I.shape[0], I.shape[1])
+        bboxes = match(F, I, threshold=detection_threshold)
+        for i in range(len(bboxes)):
+            bboxes[i] = bboxes[i] / (2**(k+1))
         matches.extend(bboxes)
     
     # Downscale
     I = I_base
-    for _ in range(num_downscales):
+    for k in range(num_downscales):
         I = cv2.pyrDown(I)
         # m, n, _ = I.shape
         # I = cv2.pyrDown(I, dstsize=(n/2, m/2))
-        # print(I.shape[0], I.shape[1])
-        bboxes = match(F, I_base, threshold=detection_threshold)
+        print(I.shape[0], I.shape[1])
+        bboxes = match(F, I, threshold=detection_threshold)
+        for i in range(len(bboxes)):
+            bboxes[i] = bboxes[i] * (2**(k+1))
         matches.extend(bboxes)
 
     return matches
@@ -128,11 +132,13 @@ def create_and_save_detection_image(image, matches, filename="image_detections.p
 
 
 def main():
+    """
     template = cv2.imread('messi_face.jpg')
     image = cv2.imread('messipyr.jpg')
 
     matches = template_match(template, image)
     create_and_save_detection_image(image, matches)
+    """
 
     template = cv2.imread('stop_signs/stop_template.jpg').astype(np.float32)
     for i in range(1, 6):
