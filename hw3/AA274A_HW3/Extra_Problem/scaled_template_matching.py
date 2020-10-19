@@ -5,9 +5,8 @@ import cv2
 import matplotlib.pyplot as plt
 
 
-# From Problem_4.
 # Instead of returning tuples we return np.array
-def match(template, image, threshold=0.999):
+def match(template, image, threshold):
     """
     Input
         template: A (k, ell, c)-shaped ndarray containing the k x ell template (with c channels).
@@ -18,34 +17,21 @@ def match(template, image, threshold=0.999):
         matches: A list of (top-left y, top-left x, bounding box height, bounding box width) tuples for each match's bounding box.
     """
     ########## Code starts here ##########
-
-    F, I, t = template, image, threshold
-    f, g, c = F.shape
-    m, n, _ = I.shape
-
-    # Num of pixels to pad by
-    px = int(np.floor(f / 2))
-    py = int(np.floor(g / 2))
-
-    I_padded = np.pad(I, ((px, px), (py, py), (0,0)), 'constant') # Don't pad channels
     bboxes = []
+    I, F = image.astype(np.uint8), template.astype(np.uint8)
+    match_method = cv2.TM_CCOEFF_NORMED
+    f, g, _ = I.shape
+    h, w, _ = F.shape
 
-    # Naive loopy version
-    cfg = c*f*g # length of our vectors
-    Fvec = np.reshape(F, cfg, order='C')
-    Fnorm = np.linalg.norm(Fvec)
-    for u in range(m): # rows
-        for v in range(n): # cols
-            Ivec = I_padded[u:u+f, v:v+g, :] # (f, g, c)-shaped slice from padded image
-            Ivec = np.reshape(Ivec, cfg, order='C')
-            Inorm = np.linalg.norm(Ivec)
-            # conditional to silence runtime warning if one of the norms is zero
-            if np.all(Fnorm == 0) or np.all(Inorm == 0):
-                sim = 0
-            else:
-                sim = np.dot(Fvec, Ivec) / Fnorm / Inorm
-            if sim > t:
-                bboxes.append(np.array([u-px, v-py, f, g]))
+    sim = cv2.matchTemplate(I, F, match_method)
+    x, y = np.nonzero(sim > threshold)
+    n = x.shape[0] # number of boxes
+    h = np.ones(n) * h
+    w = np.ones(n) * w
+    if n != 0:
+        B = np.vstack((x, y, h, w)).astype(np.int).T
+        for i in range(n):
+            bboxes.append(B[i])
 
     return bboxes
     ########## Code ends here ##########
@@ -93,7 +79,7 @@ def template_match(template, image,
         I = cv2.pyrUp(I)
         # m, n, _ = I.shape
         # I = cv2.pyrUp(I, dstsize=(n*2, m*2))
-        print(I.shape[0], I.shape[1])
+        # print(I.shape[0], I.shape[1])
         bboxes = match(F, I, threshold=detection_threshold)
         for i in range(len(bboxes)):
             bboxes[i] = bboxes[i] / (2**(k+1))
@@ -105,7 +91,7 @@ def template_match(template, image,
         I = cv2.pyrDown(I)
         # m, n, _ = I.shape
         # I = cv2.pyrDown(I, dstsize=(n/2, m/2))
-        print(I.shape[0], I.shape[1])
+        # print(I.shape[0], I.shape[1])
         bboxes = match(F, I, threshold=detection_threshold)
         for i in range(len(bboxes)):
             bboxes[i] = bboxes[i] * (2**(k+1))
@@ -132,13 +118,11 @@ def create_and_save_detection_image(image, matches, filename="image_detections.p
 
 
 def main():
-    """
     template = cv2.imread('messi_face.jpg')
     image = cv2.imread('messipyr.jpg')
 
-    matches = template_match(template, image)
+    matches = template_match(template, image, detection_threshold=0.7)
     create_and_save_detection_image(image, matches)
-    """
 
     template = cv2.imread('stop_signs/stop_template.jpg').astype(np.float32)
     for i in range(1, 6):
