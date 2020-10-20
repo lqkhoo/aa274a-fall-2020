@@ -37,7 +37,7 @@
 \usepackage{xcolor}
 \setlength{\parindent}{0in}
 
-\title{AA 274A: Principles of Robot Autonomy I \\ Problem Set 2}
+\title{AA 274A: Principles of Robot Autonomy I \\ Problem Set 3}
 \author{Name: Li Quan Khoo     \\ SUID: lqkhoo (06154100)}
 \date{\today}
 
@@ -291,9 +291,125 @@ Vectorized implementation batching all image pixels: Runtimes are 0.13, 7.55, 0.
 \end{enumerate}
 
 \item % (v)
-We use the result that any $m\times n$ matrix of rank 1 could be expressed as a vector outer product $uv^\mathsf{T}$. This is because the column rank of any vector $u$ has to be equal to 1. To answer the question, if we know that a matrix is rank 1 and we simply wish to recover $u$ and $v^\mathsf{T}$, these correspond to the orthogonal matrices after performing SVD on the original matrix. Alternatively, $u$ could be any of its columns and $v$ is the single nonzero row left over after performing Gaussian elimination, up to a constant factor $k$.
+\textbf{Observation:} any $m\times n$ matrix of rank 1 could be expressed as a vector outer product $uv^\mathsf{T}$, because the column rank of any vector $u$ has to be equal to 1. Let our real matrix be $F = uv^\mathcal{T}$.
 
-Additionally, it is easy to see that for any $m\times n$ matrix of rank $r$, we can express it as a linear combination of $r$ matrices, which themselves could be expressed as the outer product of the linearly independent rows and columns of the original matrix. This is a generalization of the above result.
+\textbf{Case:} Most specific case where $u = v$.
+
+To find the vectors, consider the LU decomposition of $F$:
+
+\textbf{Existence and uniqueness:} Since $F=uu^\mathcal{T}$, by inspection $F$ also has to be symmetric, and therefore square. If $F$ is square, there exists an LU decomposition where $F=PLU$, but because $F$ is rank-deficient, it cannot be positive definite, which means this decomposition is not unique.
+
+\textbf{Proposition:} Because $F$ is rank 1 and $U$ is upper-triangular, the only nonzero row of $U$ is its top row. Let $b$ be this vector, and let $a$ be the first column of the matrix $PL$. Then we have $F = ab^\mathcal{T}$. Each entry $u_i$ in the vector $u$ is then simply $\sqrt{a_i b_i}$. So $F=uu^\mathsf{T}= k\hat{f}\hat{f}^\mathsf{T}$ where $k$ is a constant and $\hat{f}$ are unit vectors.
+
+\textbf{Example:} (via \texttt{scipy.linalg.lu})
+
+\begin{equation}
+\begin{aligned}
+F =
+\begin{bmatrix}
+1 & 2 & 1 \\
+2 & 4 & 2 \\
+1 & 2 & 1
+\end{bmatrix}
+&= 
+\underbrace{\begin{bmatrix}
+0 & 1 & 0 \\
+1 & 0 & 0 \\
+0 & 0 & 1
+\end{bmatrix}}_{P}
+\underbrace{\begin{bmatrix}
+1 & 0 & 0 \\
+0.5 & 1 & 0 \\
+0.5 & 0 & 1
+\end{bmatrix}}_{L}
+\underbrace{\begin{bmatrix}
+2 & 4 & 2 \\
+0 & 0 & 0 \\
+0 & 0 & 0
+\end{bmatrix}}_{U}
+=
+\underbrace{\begin{bmatrix}
+0.5 & 1 & 0 \\
+1 & 0 & 0 \\
+0.5 & 0 & 1
+\end{bmatrix}}_{PL}
+\underbrace{\begin{bmatrix}
+2 & 4 & 2 \\
+0 & 0 & 0 \\
+0 & 0 & 0
+\end{bmatrix}}_{U} \\
+&=
+\begin{bmatrix}
+0.5 \\
+1 \\
+0.5 
+\end{bmatrix}
+\begin{bmatrix}
+2 & 4 & 2 
+\end{bmatrix}
+=
+\begin{bmatrix}
+1 \\
+2 \\
+1 
+\end{bmatrix}
+\begin{bmatrix}
+1 & 2 & 1 
+\end{bmatrix}
+= uu^\mathcal{T}
+\end{aligned}
+\end{equation}
+
+\textbf{Uniqueness:} The above proves a slightly more general result than we set out to show. We have seen that if $F$ is square and rank 1, it admits an LU decomposition such that $U$ is also rank 1. Therefore for such $F$, there exists a unique decomposition $F=k\hat{f}\hat{f}^\mathsf{T}$.
+
+\textbf{Case:} $F$ not square, so $u \neq v$.
+
+\textbf{Observation:} Since $F$ is not square, it does not admit an LU decomposition or eigendecomposition. We approach this from $F=U\Sigma V^\mathsf{T}$ i.e. its singular value decomposition. It is known that for any matrix, its SVD exists and is unique.
+
+Since $F$ is rank 1, there is only one nonzero eigenvalue $\lambda$ in $\Sigma$. Let $i$ be the position of $\lambda$ down the diagonal of $\Sigma$. Let $u$ be the $i$-th column of $U$ and let $v$ be the $i$-th row of $V$. Then $F=\lambda u v^\mathsf{T}$.
+
+\textbf{Example:} (via \texttt{np.linalg.svd})
+
+\begin{equation}
+\begin{aligned}
+F &= 
+\begin{bmatrix}
+1 & 2 & 3 & 4 \\
+2 & 4 & 6 & 8 \\
+3 & 6 & 9 & 12
+\end{bmatrix} \\
+&=
+\begin{bmatrix}
+-0.26 & -0.05 & 0.96 \\
+-0.53 & -0.82 & -0.19 \\
+-0.80 & -0.56 & -0.19
+\end{bmatrix}
+\begin{bmatrix}
+20.49 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0 \\
+0 & 0 & 0 & 0
+\end{bmatrix}
+\begin{bmatrix}
+-0.18 & -0.36 & -0.55 & -0.73 \\
+0.97 & -0.03 & -0.22 & -0.07 \\
+0.12 & -0.63 & 0.72 & -0.26 \\
+-0.06 & -0.69 & -0.36 & 0.63
+\end{bmatrix} \\
+&=
+20.49
+\begin{bmatrix}
+-0.26 \\
+-0.53 \\
+-0.80
+\end{bmatrix}
+\begin{bmatrix}
+-0.18 & -0.36 & -0.55 & -0.73
+\end{bmatrix}
+= \lambda u v^\mathsf{T}
+\end{aligned}
+\end{equation}
+
+As a generalization of the above result, any $m\times n$ matrix of rank $r$, we can express it as a linear combination of $r$ matrices, which themselves could be expressed as the outer product of the linearly independent rows and columns of the original matrix. Proof sketch: First find a basis for $F$. Since $F$ is a linear combination of its basis vectors, $F$ is just a sum of $r$ rank-1 matrices in each basis. Since each such matrix is rank-1, each admits an outer-product decomposition.
 
 \item % (vi)
 (code)
