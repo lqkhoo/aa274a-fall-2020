@@ -291,15 +291,15 @@ Vectorized implementation batching all image pixels: Runtimes are 0.13, 7.55, 0.
 \end{enumerate}
 
 \item % (v)
-\textbf{Observation:} any $m\times n$ matrix of rank 1 could be expressed as a vector outer product $uv^\mathsf{T}$, because the column rank of any vector $u$ has to be equal to 1. Let our real matrix be $F = uv^\mathcal{T}$.
+\textbf{Observation:} any $m\times n$ matrix of rank 1 could be expressed as a vector outer product $uv^\mathsf{T}$, because the column rank of any vector $u$ has to be equal to 1. Let our real matrix be $F = uv^\mathsf{T}$.
 
 \textbf{Case:} Most specific case where $u = v$.
 
 To find the vectors, consider the LU decomposition of $F$:
 
-\textbf{Existence and uniqueness:} Since $F=uu^\mathcal{T}$, by inspection $F$ also has to be symmetric, and therefore square. If $F$ is square, there exists an LU decomposition where $F=PLU$, but because $F$ is rank-deficient, it cannot be positive definite, which means this decomposition is not unique.
+\textbf{Existence and uniqueness:} Since $F=uu^\mathsf{T}$, by inspection $F$ also has to be symmetric, and therefore square. If $F$ is square, there exists an LU decomposition where $F=PLU$, but because $F$ is rank-deficient, it cannot be positive definite, which means this decomposition is not unique.
 
-\textbf{Proposition:} Because $F$ is rank 1 and $U$ is upper-triangular, the only nonzero row of $U$ is its top row. Let $b$ be this vector, and let $a$ be the first column of the matrix $PL$. Then we have $F = ab^\mathcal{T}$. Each entry $u_i$ in the vector $u$ is then simply $\sqrt{a_i b_i}$. So $F=uu^\mathsf{T}= k\hat{f}\hat{f}^\mathsf{T}$ where $k$ is a constant and $\hat{f}$ are unit vectors.
+\textbf{Proposition:} Because $F$ is rank 1 and $U$ is upper-triangular, the only nonzero row of $U$ is its top row. Let $b$ be this vector, and let $a$ be the first column of the matrix $PL$. Then we have $F = ab^\mathsf{T}$. Each entry $u_i$ in the vector $u$ is then simply $\sqrt{a_i b_i}$. So $F=uu^\mathsf{T}= k\hat{f}\hat{f}^\mathsf{T}$ where $k$ is a constant and $\hat{f}$ are unit vectors.
 
 \textbf{Example:} (via \texttt{scipy.linalg.lu})
 
@@ -356,7 +356,7 @@ F =
 \begin{bmatrix}
 1 & 2 & 1 
 \end{bmatrix}
-= uu^\mathcal{T}
+= uu^\mathsf{T}
 \end{aligned}
 \end{equation}
 
@@ -364,7 +364,7 @@ F =
 
 \textbf{Case:} $F$ not square, so $u \neq v$.
 
-\textbf{Observation:} Since $F$ is not square, it does not admit an LU decomposition or eigendecomposition. We approach this from $F=U\Sigma V^\mathsf{T}$ i.e. its singular value decomposition. It is known that for any matrix, its SVD exists and is unique.
+\textbf{Observation:} Since $F$ is not square, it does not admit an LU decomposition or eigendecomposition. We approach this from $F=U\Sigma V^\mathsf{T}$ i.e. its singular value decomposition. It is known that for any real matrix, its SVD exists and is unique (up to sign change of $U$ and $V$).
 
 Since $F$ is rank 1, there is only one nonzero eigenvalue $\lambda$ in $\Sigma$. Let $i$ be the position of $\lambda$ down the diagonal of $\Sigma$. Let $u$ be the $i$-th column of $U$ and let $v$ be the $i$-th row of $V$. Then $F=\lambda u v^\mathsf{T}$.
 
@@ -409,8 +409,6 @@ F &=
 \end{aligned}
 \end{equation}
 
-As a generalization of the above result, any $m\times n$ matrix of rank $r$, we can express it as a linear combination of $r$ matrices, which themselves could be expressed as the outer product of the linearly independent rows and columns of the original matrix. Proof sketch: First find a basis for $F$. Since $F$ is a linear combination of its basis vectors, $F$ is just a sum of $r$ rank-1 matrices in each basis. Since each such matrix is rank-1, each admits an outer-product decomposition.
-
 \item % (vi)
 (code)
 
@@ -425,8 +423,9 @@ G(i,j) &= \sum_{u=1}^k\sum_{v=1}^l F(u,v)\cdot I(i-u, j-v) \\
 \end{aligned}
 \end{equation}
 
-
 \end{enumerate}
+
+\pagebreak
 
 \section*{Problem 4: Template Matching}
 \begin{enumerate}[label=(\roman*)]
@@ -561,12 +560,12 @@ Informal explanation: I'm going to explain this in terms of a 2x upscaling. From
 \pagebreak
 
 \item % (xi)
-The template only matches the original image, which is the second stop sign; it is not robust to intra-class variation.
+The template only matches the original image exactly, which is the second stop sign; it is not robust to intra-class variation. The template also returns many false positives; its specificity is low.
 
 \begin{tabular}[t]{l}
 	\hline \\
 	\includegraphics[width=0.7\textwidth]{img/stop1_detection.png} \\
-	No bounding boxes at default threshold on \texttt{stop1}. \\
+	Bounding boxes at default threshold on \texttt{stop1}. \\
 	\hline
 \end{tabular}
 
@@ -580,21 +579,21 @@ The template only matches the original image, which is the second stop sign; it 
 \begin{tabular}[t]{l}
 	\hline \\
 	\includegraphics[width=0.7\textwidth]{img/stop3_detection.png} \\
-	No bounding boxes at default threshold on \texttt{stop3}. \\
+	Bounding boxes at default threshold on \texttt{stop3}. \\
 	\hline
 \end{tabular}
 
 \begin{tabular}[t]{l}
 	\hline \\
 	\includegraphics[width=0.7\textwidth]{img/stop4_detection.png} \\
-	No bounding boxes at default threshold on \texttt{stop4}. \\
+	Bounding boxes at default threshold on \texttt{stop4}. \\
 	\hline
 \end{tabular}
 
 \begin{tabular}[t]{l}
 	\hline \\
 	\includegraphics[width=0.7\textwidth]{img/stop5_detection.png} \\
-	No bounding boxes at default threshold on \texttt{stop5}. \\
+	Bounding boxes at default threshold on \texttt{stop5}. \\
 	\hline
 \end{tabular}
 

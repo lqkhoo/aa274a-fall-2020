@@ -49,7 +49,119 @@
 \section*{Problem 1: EKF Localization}
 \begin{enumerate}[label=(\roman*)]
 \item % (i)
-(code)
+(code). Although this is not required by the pset, I'll setup the problem here since this is way too much for comments in code, and the derivation is neither in the notes or slides.
+
+\textbf{Given:} A unicycle model with generalized coordinates and instantaneous control vector:
+\begin{equation}
+\mathbf{x}(t)=
+\begin{bmatrix}
+x(t) \\ y(t) \\ \theta(t)
+\end{bmatrix}
+\quad , \quad
+\mathbf{u}(t) =
+\begin{bmatrix}
+V(t) \\ \omega(t)
+\end{bmatrix}
+\end{equation}
+
+\textbf{Given:} Continuous unicycle model dynamics:
+\begin{equation}
+\begin{aligned}
+\dot{x}(t) &= V(t) \cos(\theta(t)) \\
+\dot{y}(t) &= V(t) \sin(\theta(t)) \\
+\dot{\theta}(t) &= \omega(t)
+\end{aligned}
+\end{equation}
+
+For clarity, we denote the value of a variable at discrete time step using subscript $t$ from now on.
+
+\textbf{To find:} Discrete-time state transition model
+
+\begin{equation}
+\mathbf{x}_t = g(\mathbf{x}_{t-1}, \mathbf{u}_t)
+\end{equation}
+
+$g$ can be interpreted as our belief of the state variables after taking control $\mathbf{u}$ from state $\mathbf{x}_{t-1}$. $\mathbf{x}_t$ is not directly observable due to uncertainty, but assuming $g$ is well-behaved i.e. continuous etc., for small time steps $\Delta t$, we may rely on local similarity in order to approximate it. Let $\tilde{\mathbf{x}}_{t-1}$ and $\tilde{\mathbf{u}}_t$ be small perturbations about $\mathbf{x}_{t-1}$ and $\mathbf{u}_t$. We can use Taylor series approximation up to first order terms:
+
+\begin{equation}
+\begin{aligned}
+\mathbf{x}_t = g(\mathbf{x}_{t-1}, \mathbf{u}_t) \approx \tilde{\mathbf{x}}_t &= g(\tilde{\mathbf{x}}_{t-1}, \tilde{\mathbf{u}}_t) \\
+&\approx g(\mathbf{x}_{t-1}, \mathbf{u}_t)
++ G_x(\mathbf{x}_{t-1}, \mathbf{u}_t)\cdot (\tilde{\mathbf{x}}_{t-1} - \mathbf{x}_{t-1})
++ G_u(\mathbf{x}_{t-1}, \mathbf{u}_t)\cdot (\tilde{\mathbf{u}}_t - \mathbf{u}_t)
+\end{aligned}
+\end{equation}
+
+where $G_x$ and $G_u$ are Jacobians.
+
+We also assume a zero-order hold on $\mathbf u$, i.e. $\mathbf{u}$ is constant over some time period $\Delta t$. For small $\Delta t$ this is a good approximation. In order to find $\mathbf{x}_t$, first we find $\tilde{\mathbf{x}}_t$ by discretizing the continuous model using small $\Delta t$ and the zero-order hold.
+
+\begin{equation}
+\begin{aligned}
+\mathbf{x_t} \approx \tilde{\mathbf{x}}_t &= \mathbf{x}_{t-1} + \Delta \mathbf{x} \\
+&= \mathbf{x}_{t-1} + \int_0^{\Delta t} \mathbf{\dot x}_{t-1} d\tau
+\end{aligned}
+\end{equation}
+
+Individually,
+\begin{equation}
+\begin{aligned}
+\tilde \theta_t &= \theta_{t-1} + \int_0^{\Delta t} \omega_t \; d\tau \;,\quad \omega_t \; \text{constant} \\
+&= \theta_{t-1} + \omega_t \Delta t
+\end{aligned}
+\end{equation}
+
+\begin{equation}
+\begin{aligned}
+\tilde x_t &= x_{t-1} + \int_0^{\Delta t} \dot{x}_{t-1} \; d\tau \\
+&= x_{t-1} + \int_0^{\Delta t} V_t \cos(\theta_t) \; d\tau \;,\quad V_t \; \text{constant} \\
+&= x_{t-1} + V_t \int_0^{\Delta t} \cos(\theta_{t-1} + \omega_t\tau) \; d\tau \\
+&= x_{t-1} + \frac{V_t}{\omega_t} \int_0^{\Delta t} \omega_t \cdot \cos(\theta_{t-1} + \omega_t\tau) \; d\tau \\
+&= x_{t-1} + \frac{V_t}{\omega_t} \sin(\theta_{t-1} + \omega_t\tau) \Big \rvert_0^{\Delta t} \\
+&= x_{t-1} + \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big]
+\end{aligned}
+\end{equation}
+
+Likewise,
+\begin{equation}
+\begin{aligned}
+\tilde y_t &= y_{t-1} + \int_0^{\Delta t} \dot{y}_{t-1} \; d\tau \\
+&= y_{t-1} + \int_0^{\Delta t} V_t \sin(\theta_t) \; d\tau \\
+&= y_{t-1} + \frac{V_t}{\omega_t} \int_0^{\Delta t} \omega_t \cdot \sin(\theta_{t-1} + \omega_t\tau) \; d\tau \\
+&= y_{t-1} - \frac{V_t}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) \Big]
+\end{aligned}
+\end{equation}
+
+The Jacobian $G_x$ at time $t$ is then
+\begin{equation}
+G_{x,t} =
+\begin{bmatrix}
+\frac{\partial x}{\partial x} & \frac{\partial x}{\partial y} & \frac{\partial x}{\partial \theta} \\
+\frac{\partial y}{\partial x} & \frac{\partial y}{\partial y} & \frac{\partial y}{\partial \theta} \\
+\frac{\partial \theta}{\partial x} & \frac{\partial \theta}{\partial y} & \frac{\partial \theta}{\partial \theta}
+\end{bmatrix}_t = 
+\begin{bmatrix}
+1 & 0 & \frac{\partial x}{\partial \theta} \\
+0 & 1 & \frac{\partial y}{\partial \theta} \\
+0 & 0 & 1
+\end{bmatrix}
+\end{equation}
+
+
+---------
+
+This is so that we can use the model in an EKF. Let $g$ be our nonlinear, discrete-time state transition model. Since the EKF assumes $g$ to be Markov, at any time $t > t_0$, the state of our unicycle $\mathbf{x}_t$ can be expressed as:
+
+\begin{equation}
+\mathbf{x}_t = g(\mathbf{x}_{t-1}, \mathbf{u}_t)
+\end{equation}
+
+
+\begin{equation}
+\mathbf{x}_t = G_{x,t}\mathbf{x}_{t-1} + G_{u,t}\mathbf{u}_t
+\end{equation}
+
+
 
 \item % (ii)
 (code)
@@ -87,7 +199,7 @@ TODO
 
 \end{enumerate}
 
-\section*{Extra Problem: Monte Carlo Localization}
+\section*{Extra Credit: Monte Carlo Localization}
 \begin{enumerate}[label=(\roman*)]
 \item % (i)
 (code)
