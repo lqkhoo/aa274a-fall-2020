@@ -64,6 +64,7 @@ def validate_ekf_transition_update(show_plot=True):
         plt.legend(loc=0)
         plt.savefig("ekf_open_loop.png")
         print("Plot saved to ekf_open_loop.png")
+    print("EKF transition validated.")
 
 def validate_ekf_localization(show_plot=True):
     # Plot open loop
@@ -311,7 +312,7 @@ def validate_ekf_slam():
 if __name__ == '__main__':
     ### PROBLEM 1
     validate_ekf_transition_update()
-    validate_ekf_localization()
+    # validate_ekf_localization()
 
     ## Subcomponent validation
     validate_localization_transition_model()

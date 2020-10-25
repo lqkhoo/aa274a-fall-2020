@@ -16,8 +16,54 @@ def compute_dynamics(x, u, dt, compute_jacobians=True):
         Gu: np.array[3,2] - Jacobian of g with respect ot u.
     """
     ########## Code starts here ##########
-    # TODO: Compute g, Gx, Gu
 
+    # For derivations see answer to written HW4 Q1(i)
+
+    X = x # Rename
+    V, om = u       # u_t
+    x, y, th = X    # x_{t-1}
+    
+    thomdt = th+om*dt # Common term
+
+    if np.absolute(om) > EPSILON_OMEGA:
+        # Common terms
+        sin_minus_sin = np.sin(thomdt) - np.sin(th)
+        cos_minus_cos = np.cos(thomdt) - np.cos(th)
+
+        th_til  = th + om*dt
+        x_til   = x + V/om * sin_minus_sin
+        y_til   = y - V/om * cos_minus_cos
+
+        dx_dth  = V/om * cos_minus_cos
+        dy_dth  = V/om * sin_minus_sin
+        dx_dV   = sin_minus_sin / om
+        dy_dV   = -cos_minus_cos / om
+        dx_dom  = V/(om*om) * (-sin_minus_sin + om*dt*np.cos(thomdt))
+        dy_dom  = V/(om*om) * ( cos_minus_cos + om*dt*np.sin(thomdt))
+        
+    else:
+        th_til  = th
+        x_til   = x + V*dt*np.cos(th)
+        y_til   = y + V*dt*np.sin(th)
+
+        dx_dth  = -V*dt*np.sin(th)
+        dy_dth  =  V*dt*np.cos(th)
+        dx_dV   = dt*np.cos(th)
+        dy_dV   = dt*np.sin(th)
+        dx_dom  = -0.5*V*dt*dt*np.sin(th)
+        dy_dom  =  0.5*V*dt*dt*np.cos(th)
+
+    g = np.array([x_til, y_til, th_til]) # x_t = g is approximated by x_tilde
+    Gx = np.array([
+        [1, 0, dx_dth],
+        [0, 1, dy_dth],
+        [0, 0, 1]
+    ], dtype=np.float)
+    Gu = np.array([
+        [dx_dV, dx_dom],
+        [dy_dV, dy_dom],
+        [0,     dt]
+    ], dtype=np.float)
 
     ########## Code ends here ##########
 

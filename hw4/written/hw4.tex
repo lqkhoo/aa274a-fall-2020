@@ -49,7 +49,7 @@
 \section*{Problem 1: EKF Localization}
 \begin{enumerate}[label=(\roman*)]
 \item % (i)
-(code). Although this is not required by the pset, I'll setup the problem here since this is way too much for comments in code, and the derivation is neither in the notes or slides.
+(code). This written part is not required by the question, but I'll setup the problem here anyway since this is way too much for comments in code, and the derivation is neither in the notes or slides.
 
 \textbf{Given:} A unicycle model with generalized coordinates and instantaneous control vector:
 \begin{equation}
@@ -81,20 +81,20 @@ For clarity, we denote the value of a variable at discrete time step using subsc
 \mathbf{x}_t = g(\mathbf{x}_{t-1}, \mathbf{u}_t)
 \end{equation}
 
-$g$ can be interpreted as our belief of the state variables after taking control $\mathbf{u}$ from state $\mathbf{x}_{t-1}$. $\mathbf{x}_t$ is not directly observable due to uncertainty, but assuming $g$ is well-behaved i.e. continuous etc., for small time steps $\Delta t$, we may rely on local similarity in order to approximate it. Let $\tilde{\mathbf{x}}_{t-1}$ and $\tilde{\mathbf{u}}_t$ be small perturbations about $\mathbf{x}_{t-1}$ and $\mathbf{u}_t$. We can use Taylor series approximation up to first order terms:
+$g$ can be interpreted as our belief of the state variables after taking control $\mathbf{u}$ from state $\mathbf{x}_{t-1}$. $\mathbf{x}_t$ is not directly observable due to uncertainty, but assuming $g$ is well-behaved i.e. continuous etc., for small time steps $\Delta t$, we may rely on local similarity in order to approximate it. Let $\tilde{\mathbf{x}}_{t-1}$ and $\tilde{\mathbf{u}}_t$ be small perturbations about $\mathbf{x}_{t-1}$ and $\mathbf{u}_t$. We can use the (multivariate) Taylor series approximation up to first order terms:
 
 \begin{equation}
 \begin{aligned}
 \mathbf{x}_t = g(\mathbf{x}_{t-1}, \mathbf{u}_t) \approx \tilde{\mathbf{x}}_t &= g(\tilde{\mathbf{x}}_{t-1}, \tilde{\mathbf{u}}_t) \\
 &\approx g(\mathbf{x}_{t-1}, \mathbf{u}_t)
-+ G_x(\mathbf{x}_{t-1}, \mathbf{u}_t)\cdot (\tilde{\mathbf{x}}_{t-1} - \mathbf{x}_{t-1})
-+ G_u(\mathbf{x}_{t-1}, \mathbf{u}_t)\cdot (\tilde{\mathbf{u}}_t - \mathbf{u}_t)
++ G_{x,t}(\mathbf{x}_{t-1}, \mathbf{u}_t)\cdot (\tilde{\mathbf{x}}_{t-1} - \mathbf{x}_{t-1})
++ G_{u,t}(\mathbf{x}_{t-1}, \mathbf{u}_t)\cdot (\tilde{\mathbf{u}}_t - \mathbf{u}_t)
 \end{aligned}
 \end{equation}
 
 where $G_x$ and $G_u$ are Jacobians.
 
-We also assume a zero-order hold on $\mathbf u$, i.e. $\mathbf{u}$ is constant over some time period $\Delta t$. For small $\Delta t$ this is a good approximation. In order to find $\mathbf{x}_t$, first we find $\tilde{\mathbf{x}}_t$ by discretizing the continuous model using small $\Delta t$ and the zero-order hold.
+We also assume a zero-order hold on $\mathbf u$, i.e. $\mathbf{u}$ is constant over some time period $\Delta t$. For small $\Delta t$ this is a good approximation. In order to approximate $\mathbf{x}_t$, we find $\tilde{\mathbf{x}}_t$ by discretizing the continuous model using small $\Delta t$ and by using the zero-order hold.
 
 \begin{equation}
 \begin{aligned}
@@ -103,10 +103,11 @@ We also assume a zero-order hold on $\mathbf u$, i.e. $\mathbf{u}$ is constant o
 \end{aligned}
 \end{equation}
 
-Individually,
+Individually then,
 \begin{equation}
 \begin{aligned}
 \tilde \theta_t &= \theta_{t-1} + \int_0^{\Delta t} \omega_t \; d\tau \;,\quad \omega_t \; \text{constant} \\
+&= \theta_{t-1} + \omega_t \tau \big\rvert_0^{\Delta t} \\
 &= \theta_{t-1} + \omega_t \Delta t
 \end{aligned}
 \end{equation}
@@ -117,7 +118,7 @@ Individually,
 &= x_{t-1} + \int_0^{\Delta t} V_t \cos(\theta_t) \; d\tau \;,\quad V_t \; \text{constant} \\
 &= x_{t-1} + V_t \int_0^{\Delta t} \cos(\theta_{t-1} + \omega_t\tau) \; d\tau \\
 &= x_{t-1} + \frac{V_t}{\omega_t} \int_0^{\Delta t} \omega_t \cdot \cos(\theta_{t-1} + \omega_t\tau) \; d\tau \\
-&= x_{t-1} + \frac{V_t}{\omega_t} \sin(\theta_{t-1} + \omega_t\tau) \Big \rvert_0^{\Delta t} \\
+&= x_{t-1} + \frac{V_t}{\omega_t} \sin(\theta_{t-1} + \omega_t\tau) \Big\rvert_0^{\Delta t} \\
 &= x_{t-1} + \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big]
 \end{aligned}
 \end{equation}
@@ -134,37 +135,128 @@ Likewise,
 
 The Jacobian $G_x$ at time $t$ is then
 \begin{equation}
-G_{x,t} =
-\begin{bmatrix}
-\frac{\partial x}{\partial x} & \frac{\partial x}{\partial y} & \frac{\partial x}{\partial \theta} \\
-\frac{\partial y}{\partial x} & \frac{\partial y}{\partial y} & \frac{\partial y}{\partial \theta} \\
-\frac{\partial \theta}{\partial x} & \frac{\partial \theta}{\partial y} & \frac{\partial \theta}{\partial \theta}
-\end{bmatrix}_t = 
-\begin{bmatrix}
-1 & 0 & \frac{\partial x}{\partial \theta} \\
-0 & 1 & \frac{\partial y}{\partial \theta} \\
+G_{x,t}
+= \frac{\partial \mathbf{x}_t}{\partial \mathbf{x}_t}
+\approx \frac{\partial \tilde{\mathbf{x}}_t}{\partial \tilde{\mathbf{x}}_t}
+= \begin{bmatrix}
+1 & 0 & \dfrac{\partial \tilde x}{\partial \tilde \theta} \\[6pt]
+0 & 1 & \dfrac{\partial \tilde y}{\partial \tilde \theta} \\[6pt]
 0 & 0 & 1
-\end{bmatrix}
+\end{bmatrix}_t
 \end{equation}
 
-
----------
-
-This is so that we can use the model in an EKF. Let $g$ be our nonlinear, discrete-time state transition model. Since the EKF assumes $g$ to be Markov, at any time $t > t_0$, the state of our unicycle $\mathbf{x}_t$ can be expressed as:
+where
 
 \begin{equation}
-\mathbf{x}_t = g(\mathbf{x}_{t-1}, \mathbf{u}_t)
+\begin{aligned}
+\frac{\partial \tilde x_t}{\partial \tilde \theta_t}
+&= \frac{\partial}{\partial \tilde \theta_t} \Bigg( x_{t-1} + \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big] \Bigg) \\
+&= \frac{V_t}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t \Delta t) - \cos(\theta_{t-1}) \Big] \\
+\frac{\partial \tilde y_t}{\partial \tilde \theta_t}
+&= \frac{\partial}{\partial \tilde \theta_t} \Bigg( y_{t-1} - \frac{V_t}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) \Big] \Bigg) \\
+&= \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t \Delta t) - \sin(\theta_{t-1}) \Big]
+\end{aligned}
 \end{equation}
 
+Likewise, the Jacobian $G_u$ at time $t$ is
+\begin{equation}
+G_{u,t}
+= \frac{\partial \mathbf{x}_t}{\partial \mathbf{u}_t}
+\approx \frac{\partial \tilde{\mathbf{x}}_t}{\partial \tilde{\mathbf{u}}_t}
+= \begin{bmatrix}
+\dfrac{\partial \tilde x}{\partial \tilde V} & \dfrac{\partial \tilde x}{\partial \tilde \omega} \\[6pt]
+\dfrac{\partial \tilde y}{\partial \tilde V} & \dfrac{\partial \tilde y}{\partial \tilde \omega} \\[6pt]
+\dfrac{\partial \tilde \theta}{\partial \tilde V} & \dfrac{\partial \tilde \theta}{\partial \tilde \omega} \\
+\end{bmatrix}_t
+\end{equation}
+
+where
 
 \begin{equation}
-\mathbf{x}_t = G_{x,t}\mathbf{x}_{t-1} + G_{u,t}\mathbf{u}_t
+\begin{aligned}
+\frac{\partial \tilde x_t}{\partial \tilde V_t}
+&= \frac{\partial}{\partial \tilde V_t} \Bigg( x_{t-1} + \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big] \Bigg) \\
+&= \frac{1}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big]
+\\
+\frac{\partial \tilde y_t}{\partial \tilde V_t}
+&= -\frac{1}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) \Big]
+\\
+\frac{\partial \tilde \theta_t}{\partial \tilde V_t} &= 0
+\\
+\frac{\partial \tilde x_t}{\partial \tilde \omega_t}
+&= \frac{\partial}{\partial \tilde \omega_t} \Bigg( x_{t-1} + \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big] \Bigg) \\
+&= \frac{\partial}{\partial \tilde \omega_t} \Bigg( \frac{V_t}{\omega_t}\sin(\theta_{t-1} + \omega_t\Delta t) - \frac{V_t}{\omega_t}\sin(\theta_{t-1}) \Bigg) \\
+&= -\frac{V_t}{\omega_t^2} \sin(\theta_{t-1} + \omega_t\Delta t) + \frac{V_t}{\omega_t}\cos(\theta_{t-1} + \omega_t\Delta t) \cdot \Delta t + \frac{V_t}{\omega_t^2}\sin(\theta_{t-1}) \\
+&= \frac{V_t}{\omega_t^2} \Big [ \sin(\theta_{t-1}) - \sin(\theta_{t-1} + \omega_t\Delta t) + \omega_t \Delta t \cos(\theta_{t-1} + \omega_t\Delta t) \Big]
+\\
+\frac{\partial \tilde y_t}{\partial \tilde \omega_t}
+&= \frac{\partial}{\partial \tilde \omega_t} \Bigg( -\frac{V_t}{\omega_t}\cos(\theta_{t-1} + \omega_t\Delta t) + \frac{V_t}{\omega_t}\cos(\theta_{t-1}) \Bigg) \\
+&= \frac{V_t}{\omega_t^2}\cos(\theta_{t-1} + \omega_t\Delta t) + \frac{V_t}{\omega_t}\sin(\theta_{t-1} + \omega_t\Delta t) \cdot \Delta t - \frac{V_t}{\omega_t^2}\cos(\theta_{t-1}) \\
+&= \frac{V_t}{\omega_t^2} \Big [ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) + \omega_t \Delta t \sin(\theta_{t-1} + \omega_t\Delta t) \Big]
+\\
+\frac{\partial \tilde \theta_t}{\partial \tilde \omega_t}
+&= \frac{\partial}{\partial \tilde \omega_t} \Bigg( \theta_{t-1} + \omega_t \Delta t \Bigg) = \Delta t
+\end{aligned}
 \end{equation}
 
+As hinted in the question, $\tilde x_t$, $\tilde y_t$, as well as their partial derivatives have $\omega_t$ in the denominator and are thus indeterminate in their current form as $\omega_t \to 0$. However, these terms are composed from continuous functions; by inspection, $V_t$ and $\omega_t$ are our continuous control variables, $\sin$ and $\cos$ are continuous. Therefore we may apply l'Hopital's rule to evaluate them at the limit where $\omega_t = 0$.
 
+\pagebreak
+
+\begin{equation}
+\begin{aligned}
+\lim_{\omega_t \to 0} x_t
+&= x_{t-1} + \lim_{\omega_t \to 0} \frac{V_t \big(\sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1})\big)}{\omega_t} \\
+&= x_{t-1} + \lim_{\omega_t \to 0} \frac{ \frac{\partial}{\partial \omega_t} V_t \big(\sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1})\big)}{ \frac{\partial}{\partial \omega_t} \omega_t} \quad, \quad \text{l'Hopital's rule} \\
+&= x_{t-1} + \lim_{\omega_t \to 0} \frac{V_t \Delta t \cos(\theta_{t-1} + \omega_t \Delta t)}{1} \\
+&= x_{t-1} + V_t \Delta t \cos(\theta_{t-1} + \omega_t \Delta t) \Big\rvert_{\omega_t = 0} \\
+&= x_{t-1} + V_t \Delta t \cos(\theta_{t-1})
+\\
+\lim_{\omega_t \to 0} y_t
+&= y_{t-1} + \lim_{\omega_t \to 0} - \frac{V_t}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) \Big] \\
+&= y_{t-1} + V_t \Delta t \sin(\theta_{t-1})
+\\
+\lim_{\omega_t \to 0} \frac{\partial \tilde x_t}{\partial \tilde \theta_t}
+&= \lim_{\omega_t \to 0} \frac{V_t}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t \Delta t) - \cos(\theta_{t-1}) \Big] \\
+&= -V_t \Delta t \sin(\theta_{t-1})
+\\
+\lim_{\omega_t \to 0} \frac{\partial \tilde y_t}{\partial \tilde \theta_t}
+&= \lim_{\omega_t \to 0} \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t \Delta t) - \sin(\theta_{t-1}) \Big] \\
+&= V_t \Delta t \cos(\theta_{t-1})
+\\
+\lim_{\omega_t \to 0} \frac{\partial \tilde x_t}{\partial \tilde V_t}
+&= \lim_{\omega_t \to 0} \frac{1}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big] \\
+&= \Delta t \cos(\theta_{t-1})
+\\
+\lim_{\omega_t \to 0} \frac{\partial \tilde y_t}{\partial \tilde V_t}
+&= \lim_{\omega_t \to 0} -\frac{1}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) \Big] \\
+&= \Delta t \sin(\theta_{t-1})
+\\
+\lim_{\omega_t \to 0} \frac{\partial \tilde x_t}{\partial \tilde \omega_t}
+&= \lim_{\omega_t \to 0} \frac{V_t}{\omega_t^2} \Big [ \sin(\theta_{t-1}) - \sin(\theta_{t-1} + \omega_t\Delta t) + \omega_t \Delta t \cos(\theta_{t-1} + \omega_t\Delta t) \Big] \\
+&= \lim_{\omega_t \to 0} \frac{V_t}{2 \omega_t} \Big[ \underbrace{- \Delta t\cos(\theta_{t-1} + \omega_t \Delta t) + \Delta t\cos(\theta_{t-1} + \omega_t \Delta t)}_{=0} - \omega_t \Delta_t^2 \sin(\theta_{t-1} + \omega_t \Delta t) \Big] \\
+&= \frac{V_t}{2} \Big[ -\Delta t^2 \sin(\theta_{t-1} + \omega_t \Delta t) - \omega_t \Delta_t^3\cos(\theta_{t-1} + \omega_t \Delta t) \Big] \Big\rvert_{\omega_t = 0}\\
+&= -\frac{V_t \Delta t^2}{2} \sin(\theta_{t-1})
+\\
+\lim_{\omega_t \to 0} \frac{\partial \tilde y_t}{\partial \tilde \omega_t} 
+&= \lim_{\omega_t \to 0} \frac{V_t}{\omega_t^2} \Big [ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) + \omega_t \Delta t \sin(\theta_{t-1} + \omega_t\Delta t) \Big] \\
+&= \lim_{\omega_t \to 0} \frac{V_t}{2 \omega_t} \Big[ \underbrace{-\Delta t \sin(\theta_{t-1} + \omega_t \Delta t) + \Delta t \sin(\theta_{t-1} + \omega_t \Delta t)}_{=0} + \omega_t\Delta t^2 \cos(\theta_{t-1} + \omega_t \Delta t) \Big] \\
+&= \frac{V_t}{2} \Big[ \Delta t^2\cos(\theta_{t-1} + \omega_t \Delta t) - \omega_t \Delta t^3 \sin(\theta_{t-1} + \omega_t \Delta t) \Big] \Big\rvert_{\omega_t=0} \\
+&= \frac{V_t \Delta t^2}{2} \cos(\theta_{t-1})
+\end{aligned}
+\end{equation}
+
+\pagebreak
 
 \item % (ii)
-(code)
+(code) Following the pset, since the EKF assumes Gaussian belief, our unobservable state $\mathbf{x}_t$ can be assumed to be distributed as $\mathbf{x}_t \sim \mathcal{N}(\mathbf{x}_{t-1}, \Sigma_{t-1})$. Modeling the noise resulting from approximating the dynamics as $\upsilon \sim \mathcal{N}(0, R)$, our best prediction $\bar{\mathbf{x}}_t$ i.e. the mean of $\mathbf{x}_t$ is thus represented in the following EKF assignment step:
+
+\begin{equation}
+\begin{aligned}
+\bar{\mathbf{x}}_t = g(\mathbf{x}_{t-1}, \mathbf{u}_t) &\leftarrow \tilde{\mathbf{x}} = g(\tilde{\mathbf{x}}_{t-1}, \tilde{\mathbf{u}}_t) \\
+\bar{\Sigma}_t &\leftarrow G_{x,t} \Sigma_{t-1} G_{x,t}^\mathsf{T} + \Delta t \cdot G_{u,t} R G_{u,t}^\mathsf{T}
+\end{aligned}
+\end{equation}
 
 \item % (iii)
 (code)
