@@ -54,11 +54,13 @@ def compute_dynamics(x, u, dt, compute_jacobians=True):
         dy_dom  =  0.5*V*dt*dt*np.cos(th)
 
     g = np.array([x_til, y_til, th_til]) # x_t = g is approximated by x_tilde
+
     Gx = np.array([
         [1, 0, dx_dth],
         [0, 1, dy_dth],
         [0, 0, 1]
     ], dtype=np.float)
+
     Gu = np.array([
         [dx_dV, dx_dom],
         [dy_dV, dy_dom],
@@ -92,6 +94,59 @@ def transform_line_to_scanner_frame(line, x, tf_base_to_camera, compute_jacobian
     ########## Code starts here ##########
     # TODO: Compute h, Hx
 
+    # For derivation see written part (iii)
+
+    alpha, r = normalize_line_parameters(line)
+
+    alp = alpha # Rename
+    X = x
+
+    # So, we need to express the given line from World frame to Camera frame.
+    # Right now our camera pose is expressed wrt Robot frame, so first let's
+    # get that in terms of World coordinates.
+
+    # Frames other than world frame carry a suffix.
+    x, y, th = X                                  # Mean of belief of robot pose wrt World frame.
+    xcam_R, ycam_R, thcam_R = tf_base_to_camera   # Camera pose. in Robot frame.
+    C_Rh = np.array([xcam_R, ycam_R, 1])          # Camera pose in homogeneous coords. Robot frame.
+
+    # Homogeneous transform matrix from Robot frame coords to World frame coords
+    # This is the matrix {}^R_W T
+    RW_T = np.array([
+        [np.cos(th), -np.sin(th), x],
+        [np.sin(th),  np.cos(th), y],
+        [0, 0, 1]
+    ])
+
+    Cam_h = np.matmul(RW_T, C_Rh) # Camera in homogeneous coords. World frame.
+    xcam, ycam, hcam = Cam_h
+    xcam, ycam = xcam/hcam, ycam/hcam  # Camera in World frame coords.
+
+    # From the diagram, alp_C (alpha in Camera coords)
+    # is just alp_W subtracting (compensating for) relative frame rotations
+    # between W -> R -> C
+    alp_C = alp - th - thcam_R
+    # Since we have normalized the line parameters r_C is always positive
+    # so the absolute value disappears.
+    r_C = r - xcam*np.cos(alp) - ycam*np.sin(alp)
+
+    h = np.array([alp_C, r_C])
+
+    # Hx is asking how (alp_C, r_C) changes when the base changes position.
+    dalpC_dxR = 0 # alpha doesn't care about x, y
+    dalpC_dyR = 0
+    dalpC_dthR = -1
+
+    drC_dxW = -np.cos(alp)
+    drC_dyW = -np.sin(alp)
+    drC_dthW = (-np.cos(alp) * (-xcam_R*np.sin(th) - ycam_R*np.cos(th))
+                -np.sin(alp) * ( xcam_R*np.cos(th) - ycam_R*np.sin(th))
+                )
+
+    Hx = np.array([
+        [dalpC_dxR, dalpC_dyR, dalpC_dthR],
+        [drC_dxW, drC_dyW, drC_dthW]
+    ])
 
     ########## Code ends here ##########
 

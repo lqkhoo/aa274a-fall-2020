@@ -15,6 +15,9 @@
 \usepackage{pdfpages}
 
 
+
+
+
 \oddsidemargin 0in \evensidemargin 0in
 \topmargin -0.5in \headheight 0.25in \headsep 0.25in
 \textwidth 6.5in \textheight 9in
@@ -259,7 +262,133 @@ As hinted in the question, $\tilde x_t$, $\tilde y_t$, as well as their partial 
 \end{equation}
 
 \item % (iii)
-(code)
+(code) Our task is to recover ${}^C\alpha$ and ${}^C r$, i.e. the parameters of the line of interest expressed in Camera coordinates. First consider the diagram below.
+
+Red and green axes represent coordinate frames of the World, Robot, and Camera. We can see that ${}^C\alpha$ is the angle $\alpha$ after subtracting from the relative frame rotations going from the World to Robot to Camera frame, i.e.
+
+\begin{equation}
+{}^C\alpha = \alpha - ({}^W\theta_{robot} + {}^R\theta_{cam})
+\end{equation}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/diagram-1.png} \\
+	\hline
+\end{tabular}
+
+\pagebreak
+
+It is more difficult to recover ${}^C r$, as we cannot simply perform a frame translation and rotation because the endpoints on the line of interest are different. We approach this geometrically. Now consider the more detailed diagram below:
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/diagram-2.png} \\
+	\hline
+\end{tabular}
+
+First, we observe that the angle in grey is equivalent to the angle $\alpha$, by similarity of the triangles $OQP$ and $CTS$. Also note that by construction, the point $S$ is the orthocenter of the triangle $OMC$, but it is not immediately clear how to make use of this fact as we only know one side $OC$ of the said triangle.
+
+Of the four triangles subtended by $\alpha$, first we consider $OVS$, which lends itself most straightforwardly to geometric analysis.
+
+\begin{equation}
+\begin{aligned}
+\overrightarrow{OV}
+&= {}^W x_{cam} \\
+\overrightarrow{OS}
+&= \frac{\overrightarrow{OV}}{\cos(\alpha)} = \frac{{}^W x_{cam}}{\cos(\alpha)} \\
+\overrightarrow{VS}
+&= {}^W x_{cam} \tan(\alpha) \\
+\end{aligned}
+\end{equation}
+
+Unfortunately it is difficult to recover $ST$ in vector form, as there are no convenient ways for us to recover the ratio $OT/OS$. As a scalar quantity,
+
+\begin{equation}
+\begin{aligned}
+\overrightarrow{VS}
+&= {}^W x_{cam} \tan(\alpha) \\
+\overrightarrow{SC}
+&= {}^W y_{cam} - \overrightarrow{VS} \\
+&= {}^W y_{cam} - {}^W x_{cam} \tan(\alpha)) \\
+ST &= SC \sin(\alpha)
+\end{aligned}
+\end{equation}
+
+The above result is unassuming by itself, but putting together $OS + OT$ we get:
+\begin{equation}
+\begin{aligned}
+OT &= \frac{{}^W x_{cam}}{\cos(\alpha)} + {}^W y_{cam}\sin(\alpha) - {}^W x_{cam} \frac{\sin^2(\alpha)}{\cos(\alpha)} \\
+&= {}^W x_{cam} \frac{1-\sin^2(\alpha)}{\cos(\alpha)} + {}^W y_{cam} \sin(\alpha) \\
+&= {}^W x_{cam} \cos(\alpha) + {}^W y_{cam} \sin(\alpha)
+\end{aligned}
+\end{equation}
+
+which is a remarkable result, but I am unable to derive further insight from it. The tangent from $SC$ also disappears so we get a continuous function.
+
+Going back to the question, we have the result we are looking for. In the code since $\alpha$ is normalized to $[-\pi, \pi]$ the absolute value goes away.
+
+\begin{equation}
+{}^C r = |OQ - OT| = | {}^W r - ({}^W x_{cam} \cos(\alpha) + {}^W y_{cam} \sin(\alpha)) |
+\end{equation}
+
+So $h = [{}^C\alpha \; {}^C r]^\mathsf{T}$
+
+To compute $H_x$, first we need to remember that the relative displacement and rotation between the base (robot) coordinate frame and the camera frame is fixed. ${}^C\alpha$ is also equal to directly subtracting away the total rotation of the camera frame relative to the world frame, so from equation (15):
+
+\begin{equation}
+\begin{aligned}
+\frac{\partial ({}^C\alpha)}{\partial ({}^R x_{robot})}
+&= \frac{\partial ({}^C\alpha)}{\partial ({}^R x_{cam})} \cdot
+\frac{\partial ({}^R x_{cam})}{\partial ({}^R x_{robot})}
+=\frac{\partial ({}^C\alpha)}{\partial ({}^R x_{cam})} \cdot 1
+=
+\frac{\partial ({}^C\alpha)}{\partial ({}^R x_{cam})} = 0 \\
+\frac{\partial ({}^C\alpha)}{\partial ({}^R y_{robot})} &= \frac{\partial ({}^C\alpha)}{\partial ({}^R x_{cam})} = 0 \\
+\frac{\partial ({}^C\alpha)}{\partial ({}^R \theta_{robot})} &= \frac{\partial ({}^C\alpha)}{\partial ({}^R \theta_{cam})} = -1 \\
+\end{aligned}
+\end{equation}
+
+Likewise for 
+\begin{equation}
+\begin{aligned}
+\frac{\partial ({}^C r)}{\partial ({}^R x_{robot})} &= \frac{\partial ({}^C r)}{\partial ({}^R x_{cam})} = -\cos(\alpha) \\
+\frac{\partial ({}^C r)}{\partial ({}^R y_{robot})} &= \frac{\partial ({}^C r)}{\partial ({}^R x_{cam})} = -\sin(\alpha)
+\end{aligned}
+\end{equation}
+
+For the last partial derivative, we need the relation from the transformation:
+
+\begin{equation}
+\begin{bmatrix}
+{}^W x_{cam} \\ {}^W y_{cam} \\ 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+\cos(\theta) & -\sin(\theta) & {}^W x \\
+\sin(\theta) & \cos(\theta) & {}^W y \\
+0 & 0 & 1
+\end{bmatrix}
+\begin{bmatrix}
+{}^R x_{cam} \\ {}^R y_{cam} \\ 1
+\end{bmatrix}
+=
+\begin{bmatrix}
+{}^R x_{cam} \cos(\theta) - {}^R y_{cam} \sin(\theta) + {}^W x \\
+{}^R x_{cam} \sin(\theta) - {}^R y_{cam} \cos(\theta) + {}^W y \\
+1
+\end{bmatrix}
+\end{equation}
+
+To be specific, notation-wise the given short-hand $\theta = {}^W\theta_{robot}$, so:
+\begin{equation}
+\begin{aligned}
+\frac{\partial ({}^C r)}{\partial ({}^R \theta_{robot})}
+&= \frac{\partial}{\partial ({}^R \theta_{robot})} \Big( {}^W r - {}^W x_{cam} \cos(\alpha) - {}^W y_{cam} \sin(\alpha) \Big) \\
+&= -\cos(\alpha) \frac{\partial}{\partial ({}^R \theta_{robot})} {}^Wx_{cam} - \sin(\alpha) \frac{\partial}{\partial ({}^R \theta_{robot})} {}^Wy_{cam} \\
+&= -\cos(\alpha) \frac{\partial}{\partial ({}^W \theta_{robot})} {}^Wx_{cam} - \sin(\alpha) \frac{\partial}{\partial ({}^W \theta_{robot})} {}^Wy_{cam} \\
+&= -\cos(\alpha) \Big[ -{}^Rx_{cam} \sin(\theta) - {}^Ry_{cam} \cos(\theta) \Big] -\sin(\alpha) \Big[ {}^rx_{cam}\cos(\theta) - {}^Ry_{cam}\sin(\theta) \Big]
+\end{aligned}
+\end{equation}
 
 \item % (iv)
 (code)

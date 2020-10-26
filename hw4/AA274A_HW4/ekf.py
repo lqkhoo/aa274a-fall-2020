@@ -218,8 +218,10 @@ class EkfLocalization(Ekf):
         for j in range(self.map_lines.shape[1]):
             ########## Code starts here ##########
             # TODO: Compute h, Hx using tb.transform_line_to_scanner_frame().
-
-
+            line = self.map_lines[:,j]
+            x = self.x
+            tf_base_to_camera = self.tf_base_to_camera
+            h, Hx = tb.transform_line_to_scanner_frame(line, x, tf_base_to_camera)
             ########## Code ends here ##########
 
             h, Hx = tb.normalize_line_parameters(h, Hx)
