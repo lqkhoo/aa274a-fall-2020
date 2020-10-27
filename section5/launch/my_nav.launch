@@ -1,6 +1,0 @@
-<launch>
-    <node pkg="asl_turtlebot" type="navigator.py" name="navigator" />
-    <node pkg="section5" type="visgoal.py" name="visgoal" />
-    <!--<node pkg="rviz" type="rviz" name="rviz" args="-d /home/lqkhoo/catkin_ws/src/section5/rviz/my_nav.rviz" />-->
-    <node pkg="rviz" type="rviz" name="rviz" args="-d $(find section5)/rviz/my_nav.rviz" />
-</launch>

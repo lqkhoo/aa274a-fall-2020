@@ -8,5 +8,7 @@
 *.zip
 *.pkl
 
-*CMakeLists.txt
-*package.xml
+*.bag
+
+# *CMakeLists.txt
+# *package.xml
