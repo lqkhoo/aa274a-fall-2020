@@ -81,9 +81,14 @@ class Ekf(object):
             return
 
         ########## Code starts here ##########
-        # TODO: Update self.x, self.Sigma.
+        Sig = self.Sigma
+        x = self.x
 
-
+        S     = np.matmul(np.matmul(H, Sig), H.T) + Q
+        S_inv = np.linalg.inv(S)
+        K     = np.matmul(np.matmul(Sig, H.T), S_inv)
+        self.x     = x + np.matmul(K, z)
+        self.Sigma = Sig - np.matmul(np.matmul(K, S), K.T)
         ########## Code ends here ##########
 
     def measurement_model(self, z_raw, Q_raw):
@@ -152,9 +157,15 @@ class EkfLocalization(Ekf):
             return None, None, None
 
         ########## Code starts here ##########
-        # TODO: Compute z, Q.
-
-
+        # Just follow equations in pset (v)
+        v = np.array(v_list)
+        # Q = np.array(Q_list)
+        H = np.array(H_list)
+        d = H.shape[2]
+        
+        z = v.reshape(-1)
+        Q = scipy.linalg.block_diag(*Q_list)
+        H = H.reshape(-1, d)
         ########## Code ends here ##########
 
         return z, Q, H
@@ -194,7 +205,8 @@ class EkfLocalization(Ekf):
         hs, Hs = self.compute_predicted_measurements()
 
         ########## Code starts here ##########
-        # TODO: Compute v_list, Q_list, H_list
+
+        # Vectorized version
 
         # Conversions
         d       = self.x.shape[0]       # Should be 3 for (x, y, th)
@@ -208,11 +220,6 @@ class EkfLocalization(Ekf):
         n_mea = z_raw.shape[0]      # Num of measured lines
         n_lin = Hs.shape[0]         # Num of known lines on map
         thresh = self.g * self.g    # Association threshold as given by pset
-
-        # Preallocate outputs
-        # v_arr = np.zeros((n_lin, 2))
-        # Q_arr = np.zeros((n_lin, 2, 2))
-        # H_arr = np.zeros((n_lin, 2, d))
 
         # None is just alias of np.newaxis
         v_mat = z_raw[None, :, :] - hs[:, None, :] # shape(n_lin, n_mea, 2)
@@ -237,37 +244,44 @@ class EkfLocalization(Ekf):
         mea_idxs = idx[d_min < thresh]
         lin_idxs = d_argmin[d_min < thresh]
 
-        v_list = v_mat[lin_idxs, mea_idxs, :].tolist()
-        Q_list = Q_raw[mea_idxs, :, :].tolist()
-        H_list = Hs[lin_idxs, :, :].tolist()
-
+        v_list = v_mat[lin_idxs, mea_idxs, :].tolist()  # shape(<=n_mea, 2)
+        Q_list = Q_raw[mea_idxs, :, :].tolist()         # shape(<=n_mea, 2, 2)
+        H_list = Hs[lin_idxs, :, :].tolist()            # shape(<=n_mea, 2, d)
 
         """
         # Naive loopy version.
+        d   = self.x.shape[0] # Should be 3 for (x, y, th)
+        Sig = self.Sigma      # shape(d, d). Belief (Gaussian) covariance 
+        Hs = np.asarray(Hs)   # shape(n_lin, 2, d)
+        # hs = hs             # shape(2, n_lin)
+        n_mea = z_raw.shape[1]      # Num of measured lines
+        n_lin = Hs.shape[0]         # Num of known lines on map
+        thresh = self.g * self.g    # Association threshold as given by pset
+
         v_list = []
         Q_list = []
         H_list = []
 
-        for i in range(n_mea):  # For each measurement
+        for i in range(n_mea):
             zi = z_raw[:, i] # observation
-            Qi = Q_raw[i]    # shape(2,2) observation covariance
+            Qi = Q_raw[i] # shape(2,2) observation covariance
 
-            dmin = float("inf")
+            d_min = np.inf
 
             v, Q, H = None, None, None
-            for j in range(n_lin):  # We test against every known line
-                hj = hs[j]
+            for j in range(n_lin):
+                hj = hs[:, j]
                 Hj = Hs[j]
 
                 vij = zi - hj
                 Sij = np.matmul(np.matmul(Hj, Sig), Hj.T) + Qi
                 dij = np.matmul(np.matmul(vij.T, np.linalg.inv(Sij)), vij)
 
-                if dij < dmin:
-                    dmin = dij
+                if dij < d_min:
+                    d_min = dij
                     v, Q, H = vij, Qi, Hj
 
-            if dmin < thresh:
+            if d_min < thresh:
                 v_list.append(v)
                 Q_list.append(Q)
                 H_list.append(H)
@@ -293,7 +307,6 @@ class EkfLocalization(Ekf):
         Hx_list = []
         for j in range(self.map_lines.shape[1]):
             ########## Code starts here ##########
-            # TODO: Compute h, Hx using tb.transform_line_to_scanner_frame().
             line = self.map_lines[:,j]
             x = self.x
             tf_base_to_camera = self.tf_base_to_camera
