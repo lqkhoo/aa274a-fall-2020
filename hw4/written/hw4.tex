@@ -14,8 +14,25 @@
 \usepackage[pdftex,colorlinks=true, urlcolor = blue]{hyperref}
 \usepackage{pdfpages}
 
-
-
+% Preamble for tikz generated via mathcha.io
+\usepackage{physics}
+\usepackage{amsmath}
+\usepackage{tikz}
+\usepackage{mathdots}
+\usepackage{yhmath}
+\usepackage{cancel}
+\usepackage{color}
+\usepackage{siunitx}
+\usepackage{array}
+\usepackage{multirow}
+\usepackage{amssymb}
+\usepackage{gensymb}
+\usepackage{tabularx}
+\usepackage{booktabs}
+\usetikzlibrary{fadings}
+\usetikzlibrary{patterns}
+\usetikzlibrary{shadows.blur}
+\usetikzlibrary{shapes}
 
 
 \oddsidemargin 0in \evensidemargin 0in
@@ -115,10 +132,22 @@ Individually then,
 \end{aligned}
 \end{equation}
 
+Because $\theta$ is varying with time, we can follow the hint (on Piazza) and make the substitution $dt = \frac{1}{\omega_t} d\theta$. And thus $\Delta \theta = \omega_t \Delta t$.
 \begin{equation}
 \begin{aligned}
 \tilde x_t &= x_{t-1} + \int_0^{\Delta t} \dot{x}_{t-1} \; d\tau \\
-&= x_{t-1} + \int_0^{\Delta t} V_t \cos(\theta_t) \; d\tau \;,\quad V_t \; \text{constant} \\
+&= x_{t-1} + \int_{\tau=0}^{\tau=\Delta t} V_t \cos(\theta_\tau) \; d\tau \;,\quad V_t \; \text{constant} \\
+&= x_{t-1} + \int_{\theta=\theta_{t-1}}^{\theta=\theta_{t-1}+\Delta \theta} V_t\cos(\theta) \cdot \frac{1}{\omega_t} d\theta \\
+&= x_{t-1} + \frac{V_t}{\omega_t}\sin(\theta) \Big\rvert_{\theta=\theta_{t-1}}^{\theta=\theta_{t-1}+\Delta \theta} \\
+&= x_{t-1} + \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big]
+\end{aligned}
+\end{equation}
+
+Alternatively, we arrive at the same result by integrating directly wrt $d\tau$ by explicitly considering the passage of time inside the cosine term. As $\tau$ varies, $\theta_\tau$ varies proportionally ($\because\omega_t$ constant) starting from $\theta_{t-1}$ when $\tau=0$ at the rate of $\omega_t \tau$. Therefore:
+\begin{equation}
+\begin{aligned}
+\tilde x_t &= x_{t-1} + \int_0^{\Delta t} \dot{x}_{t-1} \; d\tau \\
+&= x_{t-1} + \int_0^{\Delta t} V_t \cos(\theta_\tau) \; d\tau \;,\quad V_t \; \text{constant} \\
 &= x_{t-1} + V_t \int_0^{\Delta t} \cos(\theta_{t-1} + \omega_t\tau) \; d\tau \\
 &= x_{t-1} + \frac{V_t}{\omega_t} \int_0^{\Delta t} \omega_t \cdot \cos(\theta_{t-1} + \omega_t\tau) \; d\tau \\
 &= x_{t-1} + \frac{V_t}{\omega_t} \sin(\theta_{t-1} + \omega_t\tau) \Big\rvert_0^{\Delta t} \\
@@ -130,7 +159,7 @@ Likewise,
 \begin{equation}
 \begin{aligned}
 \tilde y_t &= y_{t-1} + \int_0^{\Delta t} \dot{y}_{t-1} \; d\tau \\
-&= y_{t-1} + \int_0^{\Delta t} V_t \sin(\theta_t) \; d\tau \\
+&= y_{t-1} + \int_0^{\Delta t} V_t \sin(\theta_\tau) \; d\tau \\
 &= y_{t-1} + \frac{V_t}{\omega_t} \int_0^{\Delta t} \omega_t \cdot \sin(\theta_{t-1} + \omega_t\tau) \; d\tau \\
 &= y_{t-1} - \frac{V_t}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) \Big]
 \end{aligned}
@@ -184,8 +213,7 @@ where
 \frac{\partial \tilde y_t}{\partial \tilde V_t}
 &= -\frac{1}{\omega_t} \Big[ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) \Big]
 \\
-\frac{\partial \tilde \theta_t}{\partial \tilde V_t} &= 0
-\\
+\frac{\partial \tilde \theta_t}{\partial \tilde V_t} &= 0 \\
 \frac{\partial \tilde x_t}{\partial \tilde \omega_t}
 &= \frac{\partial}{\partial \tilde \omega_t} \Bigg( x_{t-1} + \frac{V_t}{\omega_t} \Big[ \sin(\theta_{t-1} + \omega_t\Delta t) - \sin(\theta_{t-1}) \Big] \Bigg) \\
 &= \frac{\partial}{\partial \tilde \omega_t} \Bigg( \frac{V_t}{\omega_t}\sin(\theta_{t-1} + \omega_t\Delta t) - \frac{V_t}{\omega_t}\sin(\theta_{t-1}) \Bigg) \\
@@ -237,15 +265,15 @@ As hinted in the question, $\tilde x_t$, $\tilde y_t$, as well as their partial 
 \\
 \lim_{\omega_t \to 0} \frac{\partial \tilde x_t}{\partial \tilde \omega_t}
 &= \lim_{\omega_t \to 0} \frac{V_t}{\omega_t^2} \Big [ \sin(\theta_{t-1}) - \sin(\theta_{t-1} + \omega_t\Delta t) + \omega_t \Delta t \cos(\theta_{t-1} + \omega_t\Delta t) \Big] \\
-&= \lim_{\omega_t \to 0} \frac{V_t}{2 \omega_t} \Big[ \underbrace{- \Delta t\cos(\theta_{t-1} + \omega_t \Delta t) + \Delta t\cos(\theta_{t-1} + \omega_t \Delta t)}_{=0} - \omega_t \Delta_t^2 \sin(\theta_{t-1} + \omega_t \Delta t) \Big] \\
-&= \frac{V_t}{2} \Big[ -\Delta t^2 \sin(\theta_{t-1} + \omega_t \Delta t) - \omega_t \Delta_t^3\cos(\theta_{t-1} + \omega_t \Delta t) \Big] \Big\rvert_{\omega_t = 0}\\
-&= -\frac{V_t \Delta t^2}{2} \sin(\theta_{t-1})
+&= \lim_{\omega_t \to 0} \frac{V_t}{2 \omega_t} \Big[ \underbrace{- \Delta t\cos(\theta_{t-1} + \omega_t \Delta t) + \Delta t\cos(\theta_{t-1} + \omega_t \Delta t)}_{=0} - \omega_t (\Delta t)^2 \sin(\theta_{t-1} + \omega_t \Delta t) \Big] \\
+&= \frac{V_t}{2} \Big[ -(\Delta t)^2 \sin(\theta_{t-1} + \omega_t \Delta t) - \omega_t (\Delta t)^3\cos(\theta_{t-1} + \omega_t \Delta t) \Big] \Big\rvert_{\omega_t = 0}\\
+&= -\frac{V_t (\Delta t)^2}{2} \sin(\theta_{t-1})
 \\
 \lim_{\omega_t \to 0} \frac{\partial \tilde y_t}{\partial \tilde \omega_t} 
 &= \lim_{\omega_t \to 0} \frac{V_t}{\omega_t^2} \Big [ \cos(\theta_{t-1} + \omega_t\Delta t) - \cos(\theta_{t-1}) + \omega_t \Delta t \sin(\theta_{t-1} + \omega_t\Delta t) \Big] \\
-&= \lim_{\omega_t \to 0} \frac{V_t}{2 \omega_t} \Big[ \underbrace{-\Delta t \sin(\theta_{t-1} + \omega_t \Delta t) + \Delta t \sin(\theta_{t-1} + \omega_t \Delta t)}_{=0} + \omega_t\Delta t^2 \cos(\theta_{t-1} + \omega_t \Delta t) \Big] \\
-&= \frac{V_t}{2} \Big[ \Delta t^2\cos(\theta_{t-1} + \omega_t \Delta t) - \omega_t \Delta t^3 \sin(\theta_{t-1} + \omega_t \Delta t) \Big] \Big\rvert_{\omega_t=0} \\
-&= \frac{V_t \Delta t^2}{2} \cos(\theta_{t-1})
+&= \lim_{\omega_t \to 0} \frac{V_t}{2 \omega_t} \Big[ \underbrace{-\Delta t \sin(\theta_{t-1} + \omega_t \Delta t) + \Delta t \sin(\theta_{t-1} + \omega_t \Delta t)}_{=0} + \omega_t(\Delta t)^2 \cos(\theta_{t-1} + \omega_t \Delta t) \Big] \\
+&= \frac{V_t}{2} \Big[ (\Delta t)^2\cos(\theta_{t-1} + \omega_t \Delta t) - \omega_t (\Delta t)^3 \sin(\theta_{t-1} + \omega_t \Delta t) \Big] \Big\rvert_{\omega_t=0} \\
+&= \frac{V_t (\Delta t)^2}{2} \cos(\theta_{t-1})
 \end{aligned}
 \end{equation}
 
@@ -270,25 +298,19 @@ Red and green axes represent coordinate frames of the World, Robot, and Camera. 
 {}^C\alpha = \alpha - ({}^W\theta_{robot} + {}^R\theta_{cam})
 \end{equation}
 
-\begin{tabular}[t]{l}
-	\hline \\
-	\includegraphics[width=0.9\textwidth]{img/diagram-1.png} \\
-	\hline
-\end{tabular}
+\input{img/diagram-1.tikz}
 
 \pagebreak
 
 It is more difficult to recover ${}^C r$, as we cannot simply perform a frame translation and rotation because the endpoints on the line of interest are different. We approach this geometrically. Now consider the more detailed diagram below:
 
-\begin{tabular}[t]{l}
-	\hline \\
-	\includegraphics[width=0.9\textwidth]{img/diagram-2.png} \\
-	\hline
-\end{tabular}
+\input{img/diagram-2.tikz}
 
-First, we observe that the angle in grey is equivalent to the angle $\alpha$, by similarity of the triangles $OQP$ and $CTS$. Also note that by construction, the point $S$ is the orthocenter of the triangle $OMC$, but it is not immediately clear how to make use of this fact as we only know one side $OC$ of the said triangle.
 
-Of the four triangles subtended by $\alpha$, first we consider $OVS$, which lends itself most straightforwardly to geometric analysis.
+
+First, we observe that $\angle SWT$ is equivalent to the angle $\alpha$, by similarity of $\triangle OQP$ and $\triangle CTS$. Notice that by construction, the point $S$ is the orthocenter of $\triangle OMC$, but it is not immediately clear how to make use of this fact as we only know one side $OC$ of the said triangle.
+
+Of the four right triangles subtended by $\alpha$, first we consider $\triangle OVS$, which lends itself most straightforwardly to geometric analysis.
 
 \begin{equation}
 \begin{aligned}
@@ -323,40 +345,41 @@ OT &= \frac{{}^W x_{cam}}{\cos(\alpha)} + {}^W y_{cam}\sin(\alpha) - {}^W x_{cam
 \end{aligned}
 \end{equation}
 
-which is a remarkable result, but I am unable to derive further insight from it. The tangent from $SC$ also disappears so we get a continuous function.
+which is a remarkable result, but I am unable to derive further insight from it. The tangent term from $SC$ also disappears so we get a continuous function.
 
 Going back to the question, we have the result we are looking for. In the code since $\alpha$ is normalized to $[-\pi, \pi]$ the absolute value goes away.
 
 \begin{equation}
 {}^C r = |OQ - OT| = | {}^W r - ({}^W x_{cam} \cos(\alpha) + {}^W y_{cam} \sin(\alpha)) |
+\label{eq:cr}
 \end{equation}
 
 So $h = [{}^C\alpha \; {}^C r]^\mathsf{T}$
 
-To compute $H_x$, first we need to remember that the relative displacement and rotation between the base (robot) coordinate frame and the camera frame is fixed. ${}^C\alpha$ is also equal to directly subtracting away the total rotation of the camera frame relative to the world frame, so from equation (15):
+To compute $H_x$, first we need to remember that the relative displacement and rotation between the base (robot) coordinate frame and the camera frame is fixed. ${}^C\alpha$ is also equal to directly subtracting away the total rotation of the camera frame relative to the world frame, so from equation \ref{eq:cr}:
 
 \begin{equation}
 \begin{aligned}
-\frac{\partial ({}^C\alpha)}{\partial ({}^R x_{robot})}
-&= \frac{\partial ({}^C\alpha)}{\partial ({}^R x_{cam})} \cdot
-\frac{\partial ({}^R x_{cam})}{\partial ({}^R x_{robot})}
-=\frac{\partial ({}^C\alpha)}{\partial ({}^R x_{cam})} \cdot 1
+\frac{\partial ({}^C\alpha)}{\partial ({}^W x_{robot})}
+&= \frac{\partial ({}^C\alpha)}{\partial ({}^W x_{cam})} \cdot
+\frac{\partial ({}^W x_{cam})}{\partial ({}^W x_{robot})}
+=\frac{\partial ({}^C\alpha)}{\partial ({}^W x_{cam})} \cdot 1
 =
-\frac{\partial ({}^C\alpha)}{\partial ({}^R x_{cam})} = 0 \\
-\frac{\partial ({}^C\alpha)}{\partial ({}^R y_{robot})} &= \frac{\partial ({}^C\alpha)}{\partial ({}^R x_{cam})} = 0 \\
-\frac{\partial ({}^C\alpha)}{\partial ({}^R \theta_{robot})} &= \frac{\partial ({}^C\alpha)}{\partial ({}^R \theta_{cam})} = -1 \\
+\frac{\partial ({}^C\alpha)}{\partial ({}^W x_{cam})} = 0 \\
+\frac{\partial ({}^C\alpha)}{\partial ({}^W y_{robot})} &= \frac{\partial ({}^C\alpha)}{\partial ({}^W x_{cam})} = 0 \\
+\frac{\partial ({}^C\alpha)}{\partial ({}^W \theta_{robot})} &= \frac{\partial ({}^C\alpha)}{\partial ({}^W \theta_{cam})} = -1 \\
 \end{aligned}
 \end{equation}
 
 Likewise for 
 \begin{equation}
 \begin{aligned}
-\frac{\partial ({}^C r)}{\partial ({}^R x_{robot})} &= \frac{\partial ({}^C r)}{\partial ({}^R x_{cam})} = -\cos(\alpha) \\
-\frac{\partial ({}^C r)}{\partial ({}^R y_{robot})} &= \frac{\partial ({}^C r)}{\partial ({}^R x_{cam})} = -\sin(\alpha)
+\frac{\partial ({}^C r)}{\partial ({}^W x_{robot})} &= \frac{\partial ({}^C r)}{\partial ({}^W x_{cam})} = -\cos(\alpha) \\
+\frac{\partial ({}^C r)}{\partial ({}^W y_{robot})} &= \frac{\partial ({}^C r)}{\partial ({}^W x_{cam})} = -\sin(\alpha)
 \end{aligned}
 \end{equation}
 
-For the last partial derivative, we need the relation from the transformation:
+For the last partial derivative, we need the relation from the following transformation to recover the camera coordinates in the Robot frame:
 
 \begin{equation}
 \begin{bmatrix}
@@ -379,13 +402,12 @@ For the last partial derivative, we need the relation from the transformation:
 \end{bmatrix}
 \end{equation}
 
-To be specific, notation-wise the given short-hand $\theta = {}^W\theta_{robot}$, so:
+Notation-wise the given short-hand $\theta = {}^W\theta_{robot}$.
 \begin{equation}
 \begin{aligned}
-\frac{\partial ({}^C r)}{\partial ({}^R \theta_{robot})}
-&= \frac{\partial}{\partial ({}^R \theta_{robot})} \Big( {}^W r - {}^W x_{cam} \cos(\alpha) - {}^W y_{cam} \sin(\alpha) \Big) \\
-&= -\cos(\alpha) \frac{\partial}{\partial ({}^R \theta_{robot})} {}^Wx_{cam} - \sin(\alpha) \frac{\partial}{\partial ({}^R \theta_{robot})} {}^Wy_{cam} \\
-&= -\cos(\alpha) \frac{\partial}{\partial ({}^W \theta_{robot})} {}^Wx_{cam} - \sin(\alpha) \frac{\partial}{\partial ({}^W \theta_{robot})} {}^Wy_{cam} \\
+\frac{\partial ({}^C r)}{\partial ({}^W \theta_{robot})}
+&= \frac{\partial}{\partial ({}^W \theta_{robot})} \Big( {}^W r - {}^W x_{cam} \cos(\alpha) - {}^W y_{cam} \sin(\alpha) \Big) \\
+&= -\cos(\alpha) \Big[\frac{\partial}{\partial\theta} {}^Wx_{cam}\Big] - \sin(\alpha) \Big[\frac{\partial}{\partial\theta} {}^Wy_{cam}\Big] \\
 &= -\cos(\alpha) \Big[ -{}^Rx_{cam} \sin(\theta) - {}^Ry_{cam} \cos(\theta) \Big] -\sin(\alpha) \Big[ {}^rx_{cam}\cos(\theta) - {}^Ry_{cam}\sin(\theta) \Big]
 \end{aligned}
 \end{equation}

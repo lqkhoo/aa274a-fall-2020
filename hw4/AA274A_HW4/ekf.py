@@ -23,9 +23,9 @@ class Ekf(object):
             Sigma0: np.array[n,n] - initial belief covariance.
                  R: np.array[2,2] - control noise covariance (corresponding to dt = 1 second).
         """
-        self.x = x0  # Gaussian belief mean
+        self.x = x0          # Gaussian belief mean
         self.Sigma = Sigma0  # Gaussian belief covariance
-        self.R = R  # Control noise covariance (corresponding to dt = 1 second)
+        self.R = R           # Control noise covariance (corresponding to dt = 1 second)
 
     def transition_update(self, u, dt):
         """
@@ -196,6 +196,82 @@ class EkfLocalization(Ekf):
         ########## Code starts here ##########
         # TODO: Compute v_list, Q_list, H_list
 
+        # Conversions
+        d       = self.x.shape[0]       # Should be 3 for (x, y, th)
+        Sig     = self.Sigma            # shape(d, d). Belief (Gaussian) covariance 
+        Q_raw   = np.asarray(Q_raw)     # shape(n_mea, 2, 2)
+        Hs      = np.asarray(Hs)        # shape(n_lin, 2, d)
+        hs      = hs.T                  # shape(n_lin, 2)
+        z_raw   = z_raw.T               # shape(n_mea, 2)
+        # Dimension 2 is the minimal parameterization of a straight line.
+
+        n_mea = z_raw.shape[0]      # Num of measured lines
+        n_lin = Hs.shape[0]         # Num of known lines on map
+        thresh = self.g * self.g    # Association threshold as given by pset
+
+        # Preallocate outputs
+        # v_arr = np.zeros((n_lin, 2))
+        # Q_arr = np.zeros((n_lin, 2, 2))
+        # H_arr = np.zeros((n_lin, 2, d))
+
+        # None is just alias of np.newaxis
+        v_mat = z_raw[None, :, :] - hs[:, None, :] # shape(n_lin, n_mea, 2)
+
+        S_mat = np.matmul(Hs, Sig)                            # shape(n_lin, 2, d)
+        S_mat = np.matmul(S_mat, np.transpose(Hs, (0, 2, 1))) # shape(n_lin, 2, 2)
+        S_mat = S_mat[:, None, :, :] + Q_raw[None, :, :, :]   # shape(n_lin, n_mea, 2, 2)
+
+        Sinv_mat = np.linalg.inv(S_mat)                         # shape(n_lin, n_mea, 2, 2)
+        v_fat = v_mat[..., None]                                # shape(n_lin, n_mea, 2, 1)
+        d_mat = np.matmul(np.transpose(v_fat, (0, 1, 3, 2)), Sinv_mat)
+        d_mat = np.matmul(d_mat, v_fat)                         # shape(n_lin, n_mea, 1, 1)
+        d_mat = np.reshape(d_mat, (n_lin, n_mea))               # shape(n_lin, n_mea)
+
+        # Now we have a matrix of Mahalanobis distances between every measurement and
+        # every known line. Only thing left to do is to grab the right indices.
+
+        idx = np.linspace(1, n_mea, n_mea, dtype=np.int) -1   # just counts up in [0, n_mea-1]
+        d_argmin = np.argmin(d_mat, axis=0) # shape(n_mea)
+        d_min = d_mat[d_argmin, idx]        # shape(n_mea)
+
+        mea_idxs = idx[d_min < thresh]
+        lin_idxs = d_argmin[d_min < thresh]
+
+        v_list = v_mat[lin_idxs, mea_idxs, :].tolist()
+        Q_list = Q_raw[mea_idxs, :, :].tolist()
+        H_list = Hs[lin_idxs, :, :].tolist()
+
+
+        """
+        # Naive loopy version.
+        v_list = []
+        Q_list = []
+        H_list = []
+
+        for i in range(n_mea):  # For each measurement
+            zi = z_raw[:, i] # observation
+            Qi = Q_raw[i]    # shape(2,2) observation covariance
+
+            dmin = float("inf")
+
+            v, Q, H = None, None, None
+            for j in range(n_lin):  # We test against every known line
+                hj = hs[j]
+                Hj = Hs[j]
+
+                vij = zi - hj
+                Sij = np.matmul(np.matmul(Hj, Sig), Hj.T) + Qi
+                dij = np.matmul(np.matmul(vij.T, np.linalg.inv(Sij)), vij)
+
+                if dij < dmin:
+                    dmin = dij
+                    v, Q, H = vij, Qi, Hj
+
+            if dmin < thresh:
+                v_list.append(v)
+                Q_list.append(Q)
+                H_list.append(H)
+        """
 
         ########## Code ends here ##########
 
