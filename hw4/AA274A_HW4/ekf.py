@@ -416,9 +416,10 @@ class EkfSlam(Ekf):
 
         ########## Code starts here ##########
 
+        # No change whatsoever.
+        
         # Vectorized version
 
-        """
         # Conversions
         d       = self.x.shape[0]       # Should be 3 for (x, y, th)
         Sig     = self.Sigma            # shape(d, d). Belief (Gaussian) covariance 
@@ -428,7 +429,7 @@ class EkfSlam(Ekf):
         z_raw   = z_raw.T               # shape(n_mea, 2)
 
         n_mea = z_raw.shape[0]          # Num of measured lines
-        n_lin = (Hs.shape[0] - 3) // 2  # Num of known lines on map.
+        n_lin = Hs.shape[0]             # Num of known lines on map.
                                         ## state = [x, y, th, alp1, r1, alp2, k2, ...]
         thresh = self.g * self.g        # Association threshold as given by pset
 
@@ -437,15 +438,11 @@ class EkfSlam(Ekf):
         S_mat = np.matmul(Hs, Sig)                            # shape(n_lin, 2, d)
         S_mat = np.matmul(S_mat, np.transpose(Hs, (0, 2, 1))) # shape(n_lin, 2, 2)
         S_mat = S_mat[:, None, :, :] + Q_raw[None, :, :, :]   # shape(n_lin, n_mea, 2, 2)
-        print(S_mat.shape)
 
         Sinv_mat = np.linalg.inv(S_mat)                         # shape(n_lin, n_mea, 2, 2)
         v_fat = v_mat[..., None]                                # shape(n_lin, n_mea, 2, 1)
         d_mat = np.matmul(np.transpose(v_fat, (0, 1, 3, 2)), Sinv_mat)
         d_mat = np.matmul(d_mat, v_fat)                         # shape(n_lin, n_mea, 1, 1)
-        print(d_mat.shape)
-        print(n_lin)
-        print(n_mea)
         d_mat = np.reshape(d_mat, (n_lin, n_mea))               # shape(n_lin, n_mea)
 
         idx = np.linspace(1, n_mea, n_mea, dtype=np.int) -1   # just counts up in [0, n_mea-1]
@@ -458,24 +455,26 @@ class EkfSlam(Ekf):
         v_list = v_mat[lin_idxs, mea_idxs, :].tolist()  # shape(<=n_mea, 2)
         Q_list = Q_raw[mea_idxs, :, :].tolist()         # shape(<=n_mea, 2, 2)
         H_list = Hs[lin_idxs, :, :].tolist()            # shape(<=n_mea, 2, d)
-        """
 
+
+        """
         # Naive loopy version.
         d   = self.x.shape[0] # Should be 3 for (x, y, th)
         Sig = self.Sigma      # shape(d, d). Belief (Gaussian) covariance 
-        Hs = np.asarray(Hs)   # shape(n_lin, 2, d)
-        # hs = hs             # shape(2, n_lin)
-        n_mea = z_raw.shape[1]          # Num of measured lines
-        n_lin = (Hs.shape[0] - 3 // 2)  # Num of known lines on map. Only this bit has changed.
-        thresh = self.g * self.g        # Association threshold as given by pset
+        Hs = np.asarray(Hs)   # shape(n_sta, 2, d)
+        # hs = hs             # shape(2, n_sta)
+        n_mea = z_raw.shape[1]      # Num of measured lines
+        n_sta = self.x.shape[0]     # Dimension of state vector
+        n_lin = Hs.shape[0]         # Num of known lines on map.
+        thresh = self.g * self.g    # Association threshold as given by pset
 
         v_list = []
         Q_list = []
         H_list = []
 
-        for i in range(n_mea): # For each measurement we have
-            zi = z_raw[:, i] # observation
-            Qi = Q_raw[i] # shape(2,2) observation covariance
+        for i in range(n_mea):  # For each measurement we have
+            zi = z_raw[:, i]    # observation. shape(2,)
+            Qi = Q_raw[i]       # shape(2,2) observation covariance
 
             d_min = np.inf
 
@@ -496,6 +495,7 @@ class EkfSlam(Ekf):
                 v_list.append(v)
                 Q_list.append(Q)
                 H_list.append(H)
+        """
 
         ########## Code ends here ##########
 
@@ -553,12 +553,20 @@ class EkfSlam(Ekf):
                 [dalpC_dxR, dalpC_dyR, dalpC_dthR],
                 [drC_dxW,   drC_dyW,   drC_dthW]
             ])
+            # So the columns of Hx go dx, dy, dth, dalp1, dr1, dalp2, dr2, ...
 
             # First two map lines are assumed fixed so we don't want to propagate
-            # any measurement correction to them.
+            # any measurement correction to them. i.e. Entries all zero.
+            # Otherwise:
+
+            # dalpC_dalpC = 1
+            # dalpC_drC   = 0
+            drC_dalpC     = xcam*np.sin(alp) - ycam*np.cos(alp)
+            # drC_drC     = 1
+
             if j >= 2:
-                Hx[:,idx_j:idx_j+2] = np.eye(2) # FIX ME!
-                Hx[:,idx_j] = xcam*np.sin(alp) - ycam*np.cos(alp) #TODO
+                Hx[:,idx_j:idx_j+2] = np.eye(2)
+                Hx[1,idx_j] = drC_dalpC
             ########## Code ends here ##########
 
             h, Hx = tb.normalize_line_parameters(h, Hx)
