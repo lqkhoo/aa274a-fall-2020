@@ -133,8 +133,8 @@ def transform_line_to_scanner_frame(line, x, tf_base_to_camera, compute_jacobian
     h = np.array([alp_C, r_C])
 
     # Hx is asking how (alp_C, r_C) changes when the base changes position.
-    dalpC_dxR = 0 # alpha doesn't care about x, y
-    dalpC_dyR = 0
+    dalpC_dxR  = 0 # alpha doesn't care about x, y
+    dalpC_dyR  = 0
     dalpC_dthR = -1
 
     drC_dxW = -np.cos(alp)
@@ -145,7 +145,7 @@ def transform_line_to_scanner_frame(line, x, tf_base_to_camera, compute_jacobian
 
     Hx = np.array([
         [dalpC_dxR, dalpC_dyR, dalpC_dthR],
-        [drC_dxW, drC_dyW, drC_dthW]
+        [drC_dxW,   drC_dyW,   drC_dthW]
     ])
 
     ########## Code ends here ##########

@@ -165,6 +165,8 @@ class EkfLocalization(Ekf):
         
         z = v.reshape(-1)
         Q = scipy.linalg.block_diag(*Q_list)
+        # Q = scipy.sparse.block_diag(Q_list) # This creates an nd.array matrix as it's sparse.
+        #                                     # Creates problems downstream.
         H = H.reshape(-1, d)
         ########## Code ends here ##########
 
@@ -262,14 +264,14 @@ class EkfLocalization(Ekf):
         Q_list = []
         H_list = []
 
-        for i in range(n_mea):
+        for i in range(n_mea): # For each measurement we have
             zi = z_raw[:, i] # observation
             Qi = Q_raw[i] # shape(2,2) observation covariance
 
             d_min = np.inf
 
             v, Q, H = None, None, None
-            for j in range(n_lin):
+            for j in range(n_lin): # Compare against each known line
                 hj = hs[:, j]
                 Hj = Hs[j]
 
@@ -352,9 +354,10 @@ class EkfSlam(Ekf):
         Gu = np.zeros((self.x.size, 2))
 
         ########## Code starts here ##########
-        # TODO: Compute g, Gx, Gu.
-
-
+        g_tb, Gx_tb, Gu_tb = tb.compute_dynamics(self.x[:3], u, dt)
+        g[0:3] = g_tb
+        Gx[0:3, 0:3] = Gx_tb
+        Gu[0:3, 0:2] = Gu_tb
         ########## Code ends here ##########
 
         return g, Gx, Gu
@@ -380,8 +383,13 @@ class EkfSlam(Ekf):
         ########## Code starts here ##########
         # TODO: Compute z, Q, H.
         # Hint: Should be identical to EkfLocalization.measurement_model().
-
-
+        v = np.array(v_list)
+        H = np.array(H_list)
+        d = H.shape[2]
+        
+        z = v.reshape(-1)
+        Q = scipy.linalg.block_diag(*Q_list)
+        H = H.reshape(-1, d)
         ########## Code ends here ##########
 
         return z, Q, H
@@ -407,8 +415,87 @@ class EkfSlam(Ekf):
         hs, Hs = self.compute_predicted_measurements()
 
         ########## Code starts here ##########
-        # TODO: Compute v_list, Q_list, H_list.
 
+        # Vectorized version
+
+        """
+        # Conversions
+        d       = self.x.shape[0]       # Should be 3 for (x, y, th)
+        Sig     = self.Sigma            # shape(d, d). Belief (Gaussian) covariance 
+        Q_raw   = np.asarray(Q_raw)     # shape(n_mea, 2, 2)
+        Hs      = np.asarray(Hs)        # shape(n_lin+3, 2, d)
+        hs      = hs.T                  # shape(n_lin+3, 2)
+        z_raw   = z_raw.T               # shape(n_mea, 2)
+
+        n_mea = z_raw.shape[0]          # Num of measured lines
+        n_lin = (Hs.shape[0] - 3) // 2  # Num of known lines on map.
+                                        ## state = [x, y, th, alp1, r1, alp2, k2, ...]
+        thresh = self.g * self.g        # Association threshold as given by pset
+
+        v_mat = z_raw[None, :, :] - hs[:, None, :] # shape(n_lin, n_mea, 2)
+
+        S_mat = np.matmul(Hs, Sig)                            # shape(n_lin, 2, d)
+        S_mat = np.matmul(S_mat, np.transpose(Hs, (0, 2, 1))) # shape(n_lin, 2, 2)
+        S_mat = S_mat[:, None, :, :] + Q_raw[None, :, :, :]   # shape(n_lin, n_mea, 2, 2)
+        print(S_mat.shape)
+
+        Sinv_mat = np.linalg.inv(S_mat)                         # shape(n_lin, n_mea, 2, 2)
+        v_fat = v_mat[..., None]                                # shape(n_lin, n_mea, 2, 1)
+        d_mat = np.matmul(np.transpose(v_fat, (0, 1, 3, 2)), Sinv_mat)
+        d_mat = np.matmul(d_mat, v_fat)                         # shape(n_lin, n_mea, 1, 1)
+        print(d_mat.shape)
+        print(n_lin)
+        print(n_mea)
+        d_mat = np.reshape(d_mat, (n_lin, n_mea))               # shape(n_lin, n_mea)
+
+        idx = np.linspace(1, n_mea, n_mea, dtype=np.int) -1   # just counts up in [0, n_mea-1]
+        d_argmin = np.argmin(d_mat, axis=0) # shape(n_mea)
+        d_min = d_mat[d_argmin, idx]        # shape(n_mea)
+
+        mea_idxs = idx[d_min < thresh]
+        lin_idxs = d_argmin[d_min < thresh]
+
+        v_list = v_mat[lin_idxs, mea_idxs, :].tolist()  # shape(<=n_mea, 2)
+        Q_list = Q_raw[mea_idxs, :, :].tolist()         # shape(<=n_mea, 2, 2)
+        H_list = Hs[lin_idxs, :, :].tolist()            # shape(<=n_mea, 2, d)
+        """
+
+        # Naive loopy version.
+        d   = self.x.shape[0] # Should be 3 for (x, y, th)
+        Sig = self.Sigma      # shape(d, d). Belief (Gaussian) covariance 
+        Hs = np.asarray(Hs)   # shape(n_lin, 2, d)
+        # hs = hs             # shape(2, n_lin)
+        n_mea = z_raw.shape[1]          # Num of measured lines
+        n_lin = (Hs.shape[0] - 3 // 2)  # Num of known lines on map. Only this bit has changed.
+        thresh = self.g * self.g        # Association threshold as given by pset
+
+        v_list = []
+        Q_list = []
+        H_list = []
+
+        for i in range(n_mea): # For each measurement we have
+            zi = z_raw[:, i] # observation
+            Qi = Q_raw[i] # shape(2,2) observation covariance
+
+            d_min = np.inf
+
+            v, Q, H = None, None, None
+            for j in range(n_lin): # Compare against each known line
+                hj = hs[:, j]
+                Hj = Hs[j]
+
+                vij = zi - hj
+                Sij = np.matmul(np.matmul(Hj, Sig), Hj.T) + Qi
+                dij = np.matmul(np.matmul(vij.T, np.linalg.inv(Sij)), vij)
+
+                if dij < d_min:
+                    d_min = dij
+                    v, Q, H = vij, Qi, Hj
+
+            if d_min < thresh:
+                v_list.append(v)
+                Q_list.append(Q)
+                H_list.append(H)
 
         ########## Code ends here ##########
 
@@ -421,6 +508,7 @@ class EkfSlam(Ekf):
         J = (self.x.size - 3) // 2
         hs = np.zeros((2, J))
         Hx_list = []
+        X = self.x[:3]
         for j in range(J):
             idx_j = 3 + 2 * j
             alpha, r = self.x[idx_j:idx_j+2]
@@ -430,11 +518,47 @@ class EkfSlam(Ekf):
             ########## Code starts here ##########
             # TODO: Compute h, Hx.
 
+            # Exactly the same as tb.transform_line_to_scanner_frame()
+            alp = alpha
+            x, y, th = X
+            xcam_R, ycam_R, thcam_R = self.tf_base_to_camera   # Camera pose. in Robot frame.
+            C_Rh = np.array([xcam_R, ycam_R, 1])          # Camera pose in homogeneous coords. Robot frame.
+
+            RW_T = np.array([
+                [np.cos(th), -np.sin(th), x],
+                [np.sin(th),  np.cos(th), y],
+                [0, 0, 1]
+            ])
+
+            Cam_h = np.matmul(RW_T, C_Rh) # Camera in homogeneous coords. World frame.
+            xcam, ycam, hcam = Cam_h
+            xcam, ycam = xcam/hcam, ycam/hcam  # Camera in World frame coords.
+
+            alp_C = alp - th - thcam_R
+            r_C = r - xcam*np.cos(alp) - ycam*np.sin(alp)
+            h = np.array([alp_C, r_C])
+
+            dalpC_dxR  = 0
+            dalpC_dyR  = 0
+            dalpC_dthR = -1
+
+            drC_dxW = -np.cos(alp)
+            drC_dyW = -np.sin(alp)
+            drC_dthW = (-np.cos(alp) * (-xcam_R*np.sin(th) - ycam_R*np.cos(th))
+                        -np.sin(alp) * ( xcam_R*np.cos(th) - ycam_R*np.sin(th))
+                        )
+
+            # Hx is bigger now
+            Hx[0:2,0:3] = np.array([
+                [dalpC_dxR, dalpC_dyR, dalpC_dthR],
+                [drC_dxW,   drC_dyW,   drC_dthW]
+            ])
 
             # First two map lines are assumed fixed so we don't want to propagate
             # any measurement correction to them.
             if j >= 2:
-                Hx[:,idx_j:idx_j+2] = np.eye(2)  # FIX ME!
+                Hx[:,idx_j:idx_j+2] = np.eye(2) # FIX ME!
+                Hx[:,idx_j] = xcam*np.sin(alp) - ycam*np.cos(alp) #TODO
             ########## Code ends here ##########
 
             h, Hx = tb.normalize_line_parameters(h, Hx)
