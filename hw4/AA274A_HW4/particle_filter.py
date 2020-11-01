@@ -59,7 +59,18 @@ class ParticleFilter(object):
         # TODO: Update self.xs.
         # Hint: Call self.transition_model().
 
+        # So, in the transition update step, we have our control input u=[V, om],
+        # with zero-centered Gaussian control noise model given by
+        # self.R = [dV/dV,  dV/dom ]
+        #          [dom/dV, dom/dom]
+        # We want to get our new state by applying the transition_model to each particle
+        # by sampling from our noisy input.
 
+        d = u.shape[0]  # dimension of input
+        n = self.M      # num of particles
+        eps = np.random.multivariate_normal(np.zeros(d), self.R, size=n) # Gaussian input noise
+        us = u + eps    # shape(n, 2)
+        self.xs = self.transition_model(us, dt)
         ########## Code ends here ##########
 
     def transition_model(self, us, dt):
@@ -114,6 +125,21 @@ class ParticleFilter(object):
         #       without for loops. You may find np.linspace(), np.cumsum(), and
         #       np.searchsorted() useful. This results in a ~10x speedup.
 
+
+        # The way to see the algorithm is that the random value of r generates
+        # a sampling 'sieve' which we then use to pick out particles which are
+        # represented in terms of their weight on a sampling interval [0, 1].
+        # This sieve has as many points as we have particles.
+
+        # r ~ U[0, 1/n]
+        n = self.M
+        m = np.linspace(0, n, n, endpoint=False) # {0, ..., n-1}
+        sieve = r + m/n
+        u = np.sum(ws) * sieve # Normalization step. Maintains [0, 1] in case ws don't sum to 1.
+        csum = np.cumsum(ws)
+        idx = np.searchsorted(csum, u)
+        self.xs = xs[idx]
+        self.ws = ws[idx]
 
         ########## Code ends here ##########
 
@@ -175,6 +201,70 @@ class MonteCarloLocalization(ParticleFilter):
         #       (instead of modifying turtlebot_model). This results in a
         #       ~10x speedup.
 
+        # We don't use numpy.where here as arrays are not lazy-evaluated.
+
+        U, X = us.T, self.xs.T
+        n = self.M      # num of particles
+
+        V_all, om_all = U       # All of shape (n, )
+        x_all, y_all, th_all = X
+        
+        # First we need to split up the particles depending on |om|
+        # to use either the normal formulae or after applying l'Hopitals
+        idx = np.linspace(0, n, n, endpoint=False, dtype=np.int)
+        cond = np.absolute(om_all) > EPSILON_OMEGA
+        
+        i1 = idx[cond]
+        n1 = i1.shape[0]
+
+        # Preallocate output
+        x_til = np.zeros(n)
+        y_til = np.zeros(n)
+        th_til = np.zeros(n)
+
+        # Normal case
+        V, om = V_all[i1], om_all[i1]
+        x, y, th = x_all[i1], y_all[i1], th_all[i1]
+
+        thomdt = th + om*dt
+        sin_minus_sin = np.sin(thomdt) - np.sin(th)
+        cos_minus_cos = np.cos(thomdt) - np.cos(th)
+
+        # We preserve particle ordering to appease the validator
+        th_til[i1]  = th + om*dt
+        x_til[i1]   = x + V/om * sin_minus_sin
+        y_til[i1]   = y - V/om * cos_minus_cos
+
+        # th_til[:n1]  = th + om*dt
+        # x_til[:n1]   = x + V/om * sin_minus_sin
+        # y_til[:n1]   = y - V/om * cos_minus_cos
+
+        # l'Hopital's case
+        i2 = idx[~cond]
+        V, om = V_all[i2], om_all[i2]
+        x, y, th = x_all[i2], y_all[i2], th_all[i2]
+
+        th_til[i2]  = th + om*dt
+        x_til[i2]   = x + V*dt*np.cos(th)
+        y_til[i2]   = y + V*dt*np.sin(th)
+
+        # th_til[n1:]  = th + om*dt
+        # x_til[n1:]   = x + V*dt*np.cos(th)
+        # y_til[n1:]   = y + V*dt*np.sin(th)
+        
+        g = np.column_stack([x_til, y_til, th_til])
+
+
+        """
+        # Naive loopy version
+        n = self.M
+        g = np.zeros((n, 3))
+        for i in range(n):
+            x = self.xs[i]
+            u = us[i]
+            h = tb.compute_dynamics(x, u, dt, compute_jacobians=False)
+            g[i] = h
+        """
 
         ########## Code ends here ##########
 
@@ -201,8 +291,10 @@ class MonteCarloLocalization(ParticleFilter):
         # Hint: To maximize speed, implement this without looping over the
         #       particles. You may find scipy.stats.multivariate_normal.pdf()
         #       useful.
-
-
+        
+        vs, Q = self.measurement_model(z_raw, Q_raw)
+        ws = scipy.stats.multivariate_normal.pdf(vs, mean=None, cov=Q)
+        # ws = ws / np.sum(ws) # Autograder doesn't like normalized weights
         ########## Code ends here ##########
 
         self.resample(xs, ws)
@@ -225,8 +317,7 @@ class MonteCarloLocalization(ParticleFilter):
 
         ########## Code starts here ##########
         # TODO: Compute Q.
-
-
+        Q = scipy.linalg.block_diag(*Q_raw)
         ########## Code ends here ##########
 
         return vs, Q
@@ -269,6 +360,32 @@ class MonteCarloLocalization(ParticleFilter):
         #       Eliminating loops over M results in a ~5x speedup.
         #       Overall, that's 100x!
 
+        n     = self.M                  # Num of particles. M.
+        n_lin = self.map_lines.shape[1] # Num of known lines on map. J.
+        n_mea = z_raw.shape[1]          # Num of scanned lines. I.
+
+        z_raw = z_raw.T                     # shape(n_mea, 2)
+        # Q_raw                             # shape(n_mea, 2, 2)
+        hs = self.compute_predicted_measurements().transpose(0, 2, 1) # shape(n, n_lin, 2)
+
+        z_mat = z_raw[None, None, :, :]     # shape(1, 1,     n_mea, 2)
+        h_mat = hs[:, :, None, :]           # shape(n, n_lin, 1,     2)
+        
+        v_mat = z_mat - h_mat # Innovation      # shape(n, n_lin, n_mea, 2)
+        v_fat = v_mat[..., None]                # shape(n, n_lin, n_mea, 2, 1)
+        Q_inv = np.linalg.inv(Q_raw)            # shape(      n_mea, 2, 2)
+        Q_inv = Q_inv[None, None, :, :, :]      # shape(1, 1, n_mea, 2, 2) # PEP20
+
+        d_mat = np.matmul(v_fat.transpose(0, 1, 2, 4, 3), Q_inv)
+        d_mat = np.matmul(d_mat, v_fat)         # shape(n, n_lin, n_mea, 1, 1)
+        d_mat = d_mat.reshape((n,n_lin,n_mea))  # shape(n, n_lin, n_mea)
+
+        # For each particle, for each scanned line, this returns the index
+        # of the best known line.
+        d_argmin = np.argmin(d_mat, axis=1)                 # shape(n, n_mea)
+        d_argmin = d_argmin[:, None, :, None]               # shape(n, 1, n_mea, 1)
+        vs = np.take_along_axis(v_mat, d_argmin, axis=1)    # shape(n, 1, n_mea, 2)
+        vs = vs.reshape((n, n_mea, 2))                      # shape(n, n_mea, 2)
 
         ########## Code ends here ##########
 
@@ -294,8 +411,53 @@ class MonteCarloLocalization(ParticleFilter):
         #       versions of turtlebod_model functions directly here. This
         #       results in a ~10x speedup.
 
+        # Adapted from tb.transform_line_to_scanner_frame()
+        
+        # n = self.M                      # Num of particles
+        # d = self.xs.shape[1]            # 3 for (x, y, th)
+        # n_lin = self.map_lines.shape[1] # Num of lines on map. This is our pset fudge.
+        #                                 # We're not generally supposed to know this.
+
+        hs = self.map_lines.T           # shape(n_lin, 2)
+        alp, r = hs[:, 0], hs[:, 1]
+
+        x, y, th = self.xs.T            # shapes(3, )
+        xcam_R, ycam_R, thcam_R = self.tf_base_to_camera    # Camera pose. in Robot frame.
+
+        xcam = xcam_R*np.cos(th) - ycam_R*np.sin(th) + x
+        ycam = xcam_R*np.sin(th) + ycam_R*np.cos(th) + y
+
+        # shapes(n, n_lin)
+        alp_C = alp[None, :] - th[:, None] - thcam_R
+        r_C = (r[None, :] - xcam[:, None]*np.cos(alp)[None, :] -
+                            ycam[:, None]*np.sin(alp)[None, :])
+        
+        # Vectorized tb.normalize_line_parameters
+        cond = r_C < 0
+        alp_C[cond] += np.pi
+        r_C[cond]   *= -1
+        alp_C = (alp_C + np.pi) % (2*np.pi) - np.pi
+
+        hs = np.array([alp_C, r_C]).transpose(1, 0, 2)  # shape(n, 2, n_lin)
+
+
+        """
+        # Naive loopy version
+
+        n = self.M # num of particles
+        n_lin = self.map_lines.shape[1] # num of scanned lines
+
+        # Preallocate output
+        hs = np.zeros((n, 2, n_lin))
+
+        for i in range(n):  # For each particle
+            x = self.xs[i]
+            for j in range(n_lin):  # For each line
+                line = self.map_lines[:, j]
+                hs[i, :, j] = tb.transform_line_to_scanner_frame(line, x,
+                        self.tf_base_to_camera, compute_jacobian=False)
+        """
 
         ########## Code ends here ##########
 
         return hs
-

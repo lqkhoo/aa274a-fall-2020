@@ -30,7 +30,7 @@ def compute_dynamics(x, u, dt, compute_jacobians=True):
         sin_minus_sin = np.sin(thomdt) - np.sin(th)
         cos_minus_cos = np.cos(thomdt) - np.cos(th)
 
-        th_til  = th + om*dt
+        th_til  = thomdt
         x_til   = x + V/om * sin_minus_sin
         y_til   = y - V/om * cos_minus_cos
 
@@ -42,7 +42,7 @@ def compute_dynamics(x, u, dt, compute_jacobians=True):
         dy_dom  = V/(om*om) * ( cos_minus_cos + om*dt*np.sin(thomdt))
         
     else:
-        th_til  = th
+        th_til  = thomdt
         x_til   = x + V*dt*np.cos(th)
         y_til   = y + V*dt*np.sin(th)
 
@@ -108,6 +108,8 @@ def transform_line_to_scanner_frame(line, x, tf_base_to_camera, compute_jacobian
     # Frames other than world frame carry a suffix.
     x, y, th = X                                  # Mean of belief of robot pose wrt World frame.
     xcam_R, ycam_R, thcam_R = tf_base_to_camera   # Camera pose. in Robot frame.
+
+    """
     C_Rh = np.array([xcam_R, ycam_R, 1])          # Camera pose in homogeneous coords. Robot frame.
 
     # Homogeneous transform matrix from Robot frame coords to World frame coords
@@ -121,6 +123,10 @@ def transform_line_to_scanner_frame(line, x, tf_base_to_camera, compute_jacobian
     Cam_h = np.matmul(RW_T, C_Rh) # Camera in homogeneous coords. World frame.
     xcam, ycam, hcam = Cam_h
     xcam, ycam = xcam/hcam, ycam/hcam  # Camera in World frame coords.
+    """
+
+    xcam = xcam_R*np.cos(th) - ycam_R*np.sin(th) + x
+    ycam = xcam_R*np.sin(th) + ycam_R*np.cos(th) + y
 
     # From the diagram, alp_C (alpha in Camera coords)
     # is just alp_W subtracting (compensating for) relative frame rotations

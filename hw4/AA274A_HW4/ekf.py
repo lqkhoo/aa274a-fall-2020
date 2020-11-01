@@ -209,6 +209,9 @@ class EkfLocalization(Ekf):
         ########## Code starts here ##########
 
         # Vectorized version
+        
+        # DEVNOTE: Since the matrices involved are small, ensuring array contiguity
+        # before matmul doesn't make much difference.
 
         # Conversions
         d       = self.x.shape[0]       # Should be 3 for (x, y, th)
@@ -219,11 +222,10 @@ class EkfLocalization(Ekf):
         z_raw   = z_raw.T               # shape(n_mea, 2)
         # Dimension 2 is the minimal parameterization of a straight line.
 
-        n_mea = z_raw.shape[0]      # Num of measured lines
-        n_lin = Hs.shape[0]         # Num of known lines on map
-        thresh = self.g * self.g    # Association threshold as given by pset
+        n_mea  = z_raw.shape[0]      # Num of measured lines
+        n_lin  = Hs.shape[0]         # Num of known lines on map
+        thresh = self.g * self.g     # Association threshold as given by pset
 
-        # None is just alias of np.newaxis
         v_mat = z_raw[None, :, :] - hs[:, None, :] # shape(n_lin, n_mea, 2)
 
         S_mat = np.matmul(Hs, Sig)                            # shape(n_lin, 2, d)
@@ -231,15 +233,15 @@ class EkfLocalization(Ekf):
         S_mat = S_mat[:, None, :, :] + Q_raw[None, :, :, :]   # shape(n_lin, n_mea, 2, 2)
 
         Sinv_mat = np.linalg.inv(S_mat)                         # shape(n_lin, n_mea, 2, 2)
-        v_fat = v_mat[..., None]                                # shape(n_lin, n_mea, 2, 1)
-        d_mat = np.matmul(np.transpose(v_fat, (0, 1, 3, 2)), Sinv_mat)
-        d_mat = np.matmul(d_mat, v_fat)                         # shape(n_lin, n_mea, 1, 1)
-        d_mat = np.reshape(d_mat, (n_lin, n_mea))               # shape(n_lin, n_mea)
+        v_fat  = v_mat[..., None]                               # shape(n_lin, n_mea, 2, 1)
+        d_mat  = np.matmul(np.transpose(v_fat, (0, 1, 3, 2)), Sinv_mat)
+        d_mat  = np.matmul(d_mat, v_fat)                        # shape(n_lin, n_mea, 1, 1)
+        d_mat  = np.reshape(d_mat, (n_lin, n_mea))              # shape(n_lin, n_mea)
 
         # Now we have a matrix of Mahalanobis distances between every measurement and
         # every known line. Only thing left to do is to grab the right indices.
 
-        idx = np.linspace(1, n_mea, n_mea, dtype=np.int) -1   # just counts up in [0, n_mea-1]
+        idx = np.linspace(0, n_mea, n_mea, endpoint=False, dtype=np.int)   # just counts up in [0, n_mea-1]
         d_argmin = np.argmin(d_mat, axis=0) # shape(n_mea)
         d_min = d_mat[d_argmin, idx]        # shape(n_mea)
 
@@ -419,19 +421,22 @@ class EkfSlam(Ekf):
         # No change whatsoever.
         
         # Vectorized version
+        
+        # DEVNOTE: Since the matrices involved are small, ensuring array contiguity
+        # before matmul doesn't make much difference.
 
         # Conversions
         d       = self.x.shape[0]       # Should be 3 for (x, y, th)
         Sig     = self.Sigma            # shape(d, d). Belief (Gaussian) covariance 
         Q_raw   = np.asarray(Q_raw)     # shape(n_mea, 2, 2)
-        Hs      = np.asarray(Hs)        # shape(n_lin+3, 2, d)
-        hs      = hs.T                  # shape(n_lin+3, 2)
+        Hs      = np.asarray(Hs)        # shape(n_lin, 2, d)
+        hs      = hs.T                  # shape(n_lin, 2)
         z_raw   = z_raw.T               # shape(n_mea, 2)
+        # Dimension 2 is the minimal parameterization of a straight line.
 
-        n_mea = z_raw.shape[0]          # Num of measured lines
-        n_lin = Hs.shape[0]             # Num of known lines on map.
-                                        ## state = [x, y, th, alp1, r1, alp2, k2, ...]
-        thresh = self.g * self.g        # Association threshold as given by pset
+        n_mea  = z_raw.shape[0]      # Num of measured lines
+        n_lin  = Hs.shape[0]         # Num of known lines on map
+        thresh = self.g * self.g     # Association threshold as given by pset
 
         v_mat = z_raw[None, :, :] - hs[:, None, :] # shape(n_lin, n_mea, 2)
 
@@ -440,12 +445,15 @@ class EkfSlam(Ekf):
         S_mat = S_mat[:, None, :, :] + Q_raw[None, :, :, :]   # shape(n_lin, n_mea, 2, 2)
 
         Sinv_mat = np.linalg.inv(S_mat)                         # shape(n_lin, n_mea, 2, 2)
-        v_fat = v_mat[..., None]                                # shape(n_lin, n_mea, 2, 1)
-        d_mat = np.matmul(np.transpose(v_fat, (0, 1, 3, 2)), Sinv_mat)
-        d_mat = np.matmul(d_mat, v_fat)                         # shape(n_lin, n_mea, 1, 1)
-        d_mat = np.reshape(d_mat, (n_lin, n_mea))               # shape(n_lin, n_mea)
+        v_fat  = v_mat[..., None]                               # shape(n_lin, n_mea, 2, 1)
+        d_mat  = np.matmul(np.transpose(v_fat, (0, 1, 3, 2)), Sinv_mat)
+        d_mat  = np.matmul(d_mat, v_fat)                        # shape(n_lin, n_mea, 1, 1)
+        d_mat  = np.reshape(d_mat, (n_lin, n_mea))              # shape(n_lin, n_mea)
 
-        idx = np.linspace(1, n_mea, n_mea, dtype=np.int) -1   # just counts up in [0, n_mea-1]
+        # Now we have a matrix of Mahalanobis distances between every measurement and
+        # every known line. Only thing left to do is to grab the right indices.
+
+        idx = np.linspace(0, n_mea, n_mea, endpoint=False, dtype=np.int)   # just counts up in [0, n_mea-1]
         d_argmin = np.argmin(d_mat, axis=0) # shape(n_mea)
         d_min = d_mat[d_argmin, idx]        # shape(n_mea)
 
@@ -455,47 +463,6 @@ class EkfSlam(Ekf):
         v_list = v_mat[lin_idxs, mea_idxs, :].tolist()  # shape(<=n_mea, 2)
         Q_list = Q_raw[mea_idxs, :, :].tolist()         # shape(<=n_mea, 2, 2)
         H_list = Hs[lin_idxs, :, :].tolist()            # shape(<=n_mea, 2, d)
-
-
-        """
-        # Naive loopy version.
-        d   = self.x.shape[0] # Should be 3 for (x, y, th)
-        Sig = self.Sigma      # shape(d, d). Belief (Gaussian) covariance 
-        Hs = np.asarray(Hs)   # shape(n_sta, 2, d)
-        # hs = hs             # shape(2, n_sta)
-        n_mea = z_raw.shape[1]      # Num of measured lines
-        n_sta = self.x.shape[0]     # Dimension of state vector
-        n_lin = Hs.shape[0]         # Num of known lines on map.
-        thresh = self.g * self.g    # Association threshold as given by pset
-
-        v_list = []
-        Q_list = []
-        H_list = []
-
-        for i in range(n_mea):  # For each measurement we have
-            zi = z_raw[:, i]    # observation. shape(2,)
-            Qi = Q_raw[i]       # shape(2,2) observation covariance
-
-            d_min = np.inf
-
-            v, Q, H = None, None, None
-            for j in range(n_lin): # Compare against each known line
-                hj = hs[:, j]
-                Hj = Hs[j]
-
-                vij = zi - hj
-                Sij = np.matmul(np.matmul(Hj, Sig), Hj.T) + Qi
-                dij = np.matmul(np.matmul(vij.T, np.linalg.inv(Sij)), vij)
-
-                if dij < d_min:
-                    d_min = dij
-                    v, Q, H = vij, Qi, Hj
-
-            if d_min < thresh:
-                v_list.append(v)
-                Q_list.append(Q)
-                H_list.append(H)
-        """
 
         ########## Code ends here ##########
 
