@@ -90,7 +90,28 @@
 (code)
 
 \item % (viii)
-TODO
+Fast movements, abrupt stops, and cumulative errors from having moved a long distance, all contribute to state divergence. Fast rotations are especially bad because by the time the update step is over, the furthest detected points could have been rotated quite far.
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p1-initial.png} \\
+	\hline
+	Initial state \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p1-far.png} \\
+	\hline
+	After moving far \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p1-drift.png} \\
+	\hline
+	State drift \\
+\end{tabular}
 
 \end{enumerate}
 
@@ -103,7 +124,28 @@ TODO
 (code)
 
 \item % (iii)
-TODO
+It's the same as before; fast movements, abrupt stops, and cumulative errors from having moved a long distance, all contribute to state divergence. As mentioned in the pset, if the robot can only view one wall, then it will be uncertain about its position with respect to the direction parallel to the wall. This is due to state aliasing.
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p2-initial.png} \\
+	\hline
+	Initial state \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p2-far.png} \\
+	\hline
+	After moving far \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p2-converge.png} \\
+	\hline
+	Convergence \\
+\end{tabular}
 
 \end{enumerate}
 
@@ -119,10 +161,34 @@ TODO
 (code)
 
 \item % (iv)
-TODO
+Causes of divergence are the same as before. However, when running with 1k particles or above, MCL is much more resilient to divergences in state, and the estimated state converges back to ground truth a lot sooner. However, due to the stochastic nature of the algorithm, the state estimate can jitter in place when neither the robot or the world is moving. As expected, convergence is better with more particles by the very nature of Monte Carlo sampling.
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p3-initial.png} \\
+	\hline
+	Initial state \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p3-far.png} \\
+	\hline
+	After moving far \\
+\end{tabular}
+
+\begin{tabular}[t]{l}
+	\hline \\
+	\includegraphics[width=0.9\textwidth]{img/p3-diverge.png} \\
+	\hline
+	State divergence \\
+\end{tabular}
 
 \item % (v)
-TODO
+\includepdf[scale=0.9,pagecommand=]{md/resample.pdf}
+\includepdf[scale=0.9,pagecommand=]{md/transition_model.pdf}
+\includepdf[scale=0.9,pagecommand=]{md/compute_innovations.pdf}
+\includepdf[scale=0.9,pagecommand=]{md/compute_predicted_measurements.pdf}
 
 \end{enumerate}
 
