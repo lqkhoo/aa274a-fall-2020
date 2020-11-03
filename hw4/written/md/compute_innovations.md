@@ -25,8 +25,19 @@ def compute_innovations(self, z_raw, Q_raw):
 
     z_mat = z_raw[None, None, :, :]     # shape(1, 1,     n_mea, 2)
     h_mat = hs[:, :, None, :]           # shape(n, n_lin, 1,     2)
-    
-    v_mat = z_mat - h_mat # Innovation      # shape(n, n_lin, n_mea, 2)
+
+    # Vectorized angle_diff()
+    z_alp, h_alp = z_mat[..., 0], h_mat[..., 0]     # shape(n, n_lin, n_mea)
+    z_alp, h_alp = z_alp % (2.*np.pi), h_alp % (2.*np.pi)
+    diff = z_alp - h_alp
+    idx = np.abs(diff) > np.pi
+    sign = 2. * (diff[idx] < 0.) - 1.
+    diff[idx] += sign * 2. * np.pi
+    v_alp = diff
+    # Reconstruct v
+    v_r = z_mat[..., 1] - h_mat[..., 1]
+    v_mat = np.stack((v_alp, v_r), axis=3)
+
     v_fat = v_mat[..., None]                # shape(n, n_lin, n_mea, 2, 1)
     Q_inv = np.linalg.inv(Q_raw)            # shape(      n_mea, 2, 2)
     Q_inv = Q_inv[None, None, :, :, :]      # shape(1, 1, n_mea, 2, 2) # PEP20

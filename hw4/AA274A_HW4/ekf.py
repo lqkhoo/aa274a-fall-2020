@@ -438,7 +438,23 @@ class EkfSlam(Ekf):
         n_lin  = Hs.shape[0]         # Num of known lines on map
         thresh = self.g * self.g     # Association threshold as given by pset
 
-        v_mat = z_raw[None, :, :] - hs[:, None, :] # shape(n_lin, n_mea, 2)
+        # We have to ensure the angle is in range [0, pi] so we can't just subtract directly.
+        # Vectorize and apply the angle_diff() function given
+        # v_mat = z_raw[None, :, :] - hs[:, None, :] # shape(n_lin, n_mea, 2)
+
+        z_mat = z_raw[None, :, :]   # shape(n_lin, n_mea, 2)
+        h_mat = hs[:, None, :]      # shape(n_lin, n_mea, 2)
+        # Compute angle diff
+        z_alp, h_alp = z_mat[:, :, 0], h_mat[:, :, 0] # shape(n_lin, n_mea)
+        z_alp, h_alp = z_alp % (2.*np.pi), h_alp % (2.*np.pi)
+        diff = z_alp - h_alp
+        idx = np.abs(diff) > np.pi
+        sign = 2. * (diff[idx] < 0.) - 1.
+        diff[idx] += sign * 2. * np.pi
+        v_alp = diff
+        # Reconstruct v
+        v_r = z_mat[:, :, 1] - h_mat[:, :, 1]
+        v_mat = np.stack((v_alp, v_r), axis=2) # shape(n_lin, n_mea, 2)
 
         S_mat = np.matmul(Hs, Sig)                            # shape(n_lin, 2, d)
         S_mat = np.matmul(S_mat, np.transpose(Hs, (0, 2, 1))) # shape(n_lin, 2, 2)

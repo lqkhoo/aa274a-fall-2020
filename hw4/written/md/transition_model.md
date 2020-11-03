@@ -25,15 +25,13 @@ def transition_model(self, us, dt):
     idx = np.linspace(0, n, n, endpoint=False, dtype=np.int)
     cond = np.absolute(om_all) > EPSILON_OMEGA
     
-    i1 = idx[cond]
-    n1 = i1.shape[0]
-
     # Preallocate output
     x_til = np.zeros(n)
     y_til = np.zeros(n)
     th_til = np.zeros(n)
 
     # Normal case
+    i1 = idx[cond]
     V, om = V_all[i1], om_all[i1]
     x, y, th = x_all[i1], y_all[i1], th_all[i1]
     # We preserve particle ordering to appease the validator

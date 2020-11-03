@@ -214,22 +214,19 @@ class MonteCarloLocalization(ParticleFilter):
         idx = np.linspace(0, n, n, endpoint=False, dtype=np.int)
         cond = np.absolute(om_all) > EPSILON_OMEGA
         
-        i1 = idx[cond]
-        n1 = i1.shape[0]
-
         # Preallocate output
         x_til = np.zeros(n)
         y_til = np.zeros(n)
         th_til = np.zeros(n)
 
         # Normal case
+        i1 = idx[cond]
         V, om = V_all[i1], om_all[i1]
         x, y, th = x_all[i1], y_all[i1], th_all[i1]
 
-        thomdt = th + om*dt
+        thomdt = th+om*dt
         sin_minus_sin = np.sin(thomdt) - np.sin(th)
         cos_minus_cos = np.cos(thomdt) - np.cos(th)
-
         # We preserve particle ordering to appease the validator
         th_til[i1]  = th + om*dt
         x_til[i1]   = x + V/om * sin_minus_sin
@@ -371,7 +368,20 @@ class MonteCarloLocalization(ParticleFilter):
         z_mat = z_raw[None, None, :, :]     # shape(1, 1,     n_mea, 2)
         h_mat = hs[:, :, None, :]           # shape(n, n_lin, 1,     2)
         
-        v_mat = z_mat - h_mat # Innovation      # shape(n, n_lin, n_mea, 2)
+        # Have to ensure angle is in range [0, pi]
+        # v_mat = z_mat - h_mat # Innovation      # shape(n, n_lin, n_mea, 2)
+
+        z_alp, h_alp = z_mat[..., 0], h_mat[..., 0] # shape(n, n_lin, n_mea)
+        z_alp, h_alp = z_alp % (2.*np.pi), h_alp % (2.*np.pi)
+        diff = z_alp - h_alp
+        idx = np.abs(diff) > np.pi
+        sign = 2. * (diff[idx] < 0.) - 1.
+        diff[idx] += sign * 2. * np.pi
+        v_alp = diff
+        # Reconstruct v
+        v_r = z_mat[..., 1] - h_mat[..., 1]
+        v_mat = np.stack((v_alp, v_r), axis=3)
+
         v_fat = v_mat[..., None]                # shape(n, n_lin, n_mea, 2, 1)
         Q_inv = np.linalg.inv(Q_raw)            # shape(      n_mea, 2, 2)
         Q_inv = Q_inv[None, None, :, :, :]      # shape(1, 1, n_mea, 2, 2) # PEP20
@@ -403,6 +413,7 @@ class MonteCarloLocalization(ParticleFilter):
         Output:
             hs: np.array[M,2,J] - J line parameters in the scanner (camera) frame for M particles.
         """
+
         ########## Code starts here ##########
         # TODO: Compute hs.
         # Hint: We don't need Jacobians for particle filtering.
