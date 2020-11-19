@@ -17,7 +17,7 @@ Class statistics (median, max, mean, sdev)
     * Q4 (iii) -0.5: Controls do not satisfy bounds or no comparison to P1 results.
 * HW2: 5.0/5.0
 * HW3: 35.0/35.0
-* HW4: 6.5/7.0
+* HW4: 6.5/7.0 +11.0/11.0 extra credit
    * Q2 (2.2) -0.5: It's difficult to see convergence without plotting true map lines as well.
 
 Class statistics (median, max, mean, sdev)
