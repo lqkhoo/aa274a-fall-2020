@@ -26,5 +26,6 @@ Class statistics (median, max, mean, sdev)
 * HW3: 33.5, 35.0, 31.31, 5.17
 * HW4: 7.0, 7.0, 6.94, 0.23
 
-## Project
-* todo
+## [Project](https://github.com/lqkhoo/aa274a-fall-2020-project)
+* Members: myself, [Parthiv](https://github.com/parthiv-krishna), Shawn, Mason.
+* TODO: score.
